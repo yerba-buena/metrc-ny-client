@@ -30,6 +30,22 @@ describe("error types", () => {
     expect(err.status).toBe(404);
     expect(err.responseBody).toBeDefined();
     expect(err.responseBody!.length).toBeLessThanOrEqual(500);
+    expect(err.name).toBe("MetrcClientError");
+  });
+
+  it("MetrcClientError leaves responseBody undefined when not provided", () => {
+    const err = new MetrcClientError("404", { endpoint: "/x", method: "GET", status: 404 });
+    expect(err.responseBody).toBeUndefined();
+  });
+
+  it("MetrcClientError propagates endpoint, method, and cause from base", () => {
+    const cause = new Error("inner");
+    const err = new MetrcClientError("404", {
+      endpoint: "/x/v2/y", method: "GET", status: 404, cause
+    });
+    expect(err.endpoint).toBe("/x/v2/y");
+    expect(err.method).toBe("GET");
+    expect(err.cause).toBe(cause);
   });
 
   it("MetrcRateLimitError carries retryAfterSeconds", () => {
@@ -37,20 +53,24 @@ describe("error types", () => {
       endpoint: "/x", method: "GET", retryAfterSeconds: 5
     });
     expect(err.retryAfterSeconds).toBe(5);
+    expect(err.name).toBe("MetrcRateLimitError");
   });
 
   it("MetrcServerError carries status", () => {
     const err = new MetrcServerError("503", { endpoint: "/x", method: "GET", status: 503 });
     expect(err.status).toBe(503);
+    expect(err.name).toBe("MetrcServerError");
   });
 
   it("MetrcNetworkError extends MetrcError", () => {
     const err = new MetrcNetworkError("network", { endpoint: "/x", method: "GET" });
     expect(err).toBeInstanceOf(MetrcError);
+    expect(err.name).toBe("MetrcNetworkError");
   });
 
   it("MetrcResponseError extends MetrcError", () => {
     const err = new MetrcResponseError("bad shape", { endpoint: "/x", method: "GET" });
     expect(err).toBeInstanceOf(MetrcError);
+    expect(err.name).toBe("MetrcResponseError");
   });
 });
