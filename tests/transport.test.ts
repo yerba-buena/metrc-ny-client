@@ -122,7 +122,10 @@ describe("transport request", () => {
     const req = createRequester({ ...baseConfig, fetch });
     const p = req("/x/v2/y", {});
     await vi.advanceTimersByTimeAsync(20000);
-    await expect(p).rejects.toBeInstanceOf(MetrcRateLimitError);
+    let caught: unknown;
+    await p.catch((e) => { caught = e; });
+    expect(caught).toBeInstanceOf(MetrcRateLimitError);
+    expect((caught as MetrcRateLimitError).retryAfterSeconds).toBe(1);
     expect(fetch.mock.calls.length).toBe(3); // 1 initial + 2 retries
   });
 
