@@ -17,7 +17,10 @@ function isPaginated<T>(r: unknown): r is PaginatedResponse<T> {
   return !!r && typeof r === "object" && "Data" in r && Array.isArray((r as { Data: unknown }).Data);
 }
 
-export async function fetchAllPages<T>(fetchPage: FetchPage<T>): Promise<T[]> {
+export async function fetchAllPages<T>(
+  fetchPage: FetchPage<T>,
+  endpoint: string,
+): Promise<T[]> {
   const all: T[] = [];
   let page = 1;
   let totalPages = 1;
@@ -25,7 +28,7 @@ export async function fetchAllPages<T>(fetchPage: FetchPage<T>): Promise<T[]> {
     const resp = await fetchPage(page);
     if (!isPaginated<T>(resp)) {
       throw new MetrcResponseError("METRC API returned unexpected response shape", {
-        endpoint: "(pagination)",
+        endpoint,
         method: "GET",
       });
     }
