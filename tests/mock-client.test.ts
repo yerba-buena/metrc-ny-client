@@ -20,6 +20,7 @@ describe("createMockMetrcClient", () => {
     const client = createMockMetrcClient();
     const transfers = await client.getIncomingTransfers();
     const packages = await client.getPackagesForDelivery(transfers[0]!.DeliveryId);
+    expect(packages.length).toBeGreaterThan(0);
     for (const p of packages) expect(() => metrcPackageSchema.parse(p)).not.toThrow();
   });
 
