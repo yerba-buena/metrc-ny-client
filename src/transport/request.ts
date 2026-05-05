@@ -108,7 +108,9 @@ export function createRequester(cfg: RequesterConfig): Requester {
         endpoint, method: "GET", status, responseBody: bodyText,
       });
     }
-    // Unreachable; loop either returns or throws.
+    // Unreachable: the loop always returns on success or throws on failure.
+    // Kept as a TS-narrowed fallthrough to satisfy the `Promise<T>` return type.
+    /* c8 ignore next */
     throw lastError instanceof Error ? lastError : new Error("METRC request failed");
   };
 }
