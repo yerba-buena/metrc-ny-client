@@ -59,4 +59,44 @@ describe("fetchAllPages", () => {
     expect(result).toEqual([]);
     expect(fetchPage).toHaveBeenCalledTimes(1);
   });
+
+  it("treats falsy TotalPages as 1 (single-page short-circuit)", async () => {
+    const fetchPage = vi.fn().mockResolvedValueOnce({
+      Data: [{ id: 1 }], Total: 1, TotalRecords: 1,
+      PageSize: 20, RecordsOnPage: 1, Page: 1, CurrentPage: 1, TotalPages: 0,
+    });
+    const result = await fetchAllPages<Item>(fetchPage, "/test/v2/x");
+    expect(result).toEqual([{ id: 1 }]);
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to Page when CurrentPage is missing/falsy", async () => {
+    const fetchPage = vi.fn()
+      .mockResolvedValueOnce({
+        Data: [{ id: 1 }], Total: 2, TotalRecords: 2,
+        PageSize: 1, RecordsOnPage: 1, Page: 1, CurrentPage: 0, TotalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        Data: [{ id: 2 }], Total: 2, TotalRecords: 2,
+        PageSize: 1, RecordsOnPage: 1, Page: 2, CurrentPage: 0, TotalPages: 2,
+      });
+    const result = await fetchAllPages<Item>(fetchPage, "/test/v2/x");
+    expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(fetchPage).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to local page counter when both CurrentPage and Page are falsy", async () => {
+    const fetchPage = vi.fn()
+      .mockResolvedValueOnce({
+        Data: [{ id: 1 }], Total: 2, TotalRecords: 2,
+        PageSize: 1, RecordsOnPage: 1, Page: 0, CurrentPage: 0, TotalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        Data: [{ id: 2 }], Total: 2, TotalRecords: 2,
+        PageSize: 1, RecordsOnPage: 1, Page: 0, CurrentPage: 0, TotalPages: 2,
+      });
+    const result = await fetchAllPages<Item>(fetchPage, "/test/v2/x");
+    expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(fetchPage).toHaveBeenCalledTimes(2);
+  });
 });

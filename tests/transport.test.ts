@@ -159,6 +159,68 @@ describe("transport request", () => {
     await expect(p).rejects.toBeInstanceOf(MetrcNetworkError);
   });
 
+  it("retries on 429 without Retry-After header using backoff delay", async () => {
+    let calls = 0;
+    const fetch = vi.fn(async () => {
+      calls++;
+      if (calls === 1) return mockResponse({ ok: false, status: 429, body: "rate limited" });
+      return mockResponse({ body: { Data: [{ id: 1 }], TotalPages: 1, CurrentPage: 1, RecordsOnPage: 1, Page: 1, PageSize: 20, Total: 1, TotalRecords: 1 } });
+    });
+    const req = createRequester({ ...baseConfig, fetch });
+    const p = req<{ Data: { id: number }[] }>("/x/v2/y", {});
+    await vi.advanceTimersByTimeAsync(2000);
+    const result = await p;
+    expect(calls).toBe(2);
+    expect(result.Data).toEqual([{ id: 1 }]);
+  });
+
+  it("throws MetrcRateLimitError with undefined retryAfterSeconds when no header on final 429", async () => {
+    const fetch = vi.fn(async () => mockResponse({ ok: false, status: 429, body: "rate limited" }));
+    const req = createRequester({ ...baseConfig, fetch });
+    const p = req("/x/v2/y", {});
+    await vi.advanceTimersByTimeAsync(20000);
+    let caught: unknown;
+    await p.catch((e) => { caught = e; });
+    expect(caught).toBeInstanceOf(MetrcRateLimitError);
+    expect((caught as MetrcRateLimitError).retryAfterSeconds).toBeUndefined();
+  });
+
+  it("wraps a non-Error fetch rejection into MetrcNetworkError using String(err)", async () => {
+    const fetch = vi.fn(async () => { throw "string-rejection"; });
+    const req = createRequester({ ...baseConfig, fetch });
+    const p = req("/x/v2/y", {});
+    await vi.advanceTimersByTimeAsync(20000);
+    let caught: unknown;
+    await p.catch((e) => { caught = e; });
+    expect(caught).toBeInstanceOf(MetrcNetworkError);
+    expect((caught as MetrcNetworkError).message).toBe("string-rejection");
+  });
+
+  it("falls back to globalThis.fetch when no fetch override is provided", async () => {
+    const stub = vi.fn(async () => mockResponse({ body: { Data: [], TotalPages: 1, CurrentPage: 1, RecordsOnPage: 0, Page: 1, PageSize: 20, Total: 0, TotalRecords: 0 } }));
+    vi.stubGlobal("fetch", stub);
+    try {
+      const { fetch: _omit, ...cfgWithoutFetch } = baseConfig;
+      void _omit;
+      const req = createRequester(cfgWithoutFetch);
+      await req("/x/v2/y", {});
+      expect(stub).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("uses default rateLimitMs (200) when not provided", async () => {
+    const fetch = vi.fn(async () => mockResponse({ body: { Data: [], TotalPages: 1, CurrentPage: 1, RecordsOnPage: 0, Page: 1, PageSize: 20, Total: 0, TotalRecords: 0 } }));
+    const { rateLimitMs: _omit, ...cfgWithoutRateLimit } = baseConfig;
+    void _omit;
+    const req = createRequester({ ...cfgWithoutRateLimit, fetch });
+    const p = req("/x/v2/y", {});
+    await vi.advanceTimersByTimeAsync(500);
+    await p;
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it("respects rate limiter spacing across calls", async () => {
     const timestamps: number[] = [];
     const fetch = vi.fn(async () => {

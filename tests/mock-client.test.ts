@@ -61,4 +61,15 @@ describe("createMockMetrcClient", () => {
     const pkgs = await client.getPackagesForDelivery(999999);
     expect(pkgs).toEqual([]);
   });
+
+  it("getDeliveriesWithPackages returns empty packages for a transfer with no fixture mapping", async () => {
+    const transfer = (await createMockMetrcClient().getIncomingTransfers())[0]!;
+    const client = createMockMetrcClient({
+      transfers: [transfer],
+      packagesByDeliveryId: {}, // no entry for transfer.DeliveryId
+    });
+    const result = await client.getDeliveriesWithPackages();
+    expect(result.length).toBe(1);
+    expect(result[0]!.packages).toEqual([]);
+  });
 });

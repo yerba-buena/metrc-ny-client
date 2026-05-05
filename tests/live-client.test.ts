@@ -139,4 +139,29 @@ describe("createLiveMetrcClient", () => {
     const result = await client.getIncomingTransfers();
     expect(result.length).toBe(1);
   });
+
+  it("defaults to NOOP_LOGGER when no logger is provided", async () => {
+    const fetch = vi.fn(async () => okEnvelope([]) as unknown as Response);
+    const { logger: _omit, ...cfgWithoutLogger } = baseConfig;
+    void _omit;
+    const client = createLiveMetrcClient({ ...cfgWithoutLogger, fetch });
+    const result = await client.getIncomingTransfers();
+    expect(result).toEqual([]);
+  });
+
+  it("validateResponses=true wraps non-Error throws into MetrcResponseError", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{}]) as unknown as Response);
+    // Stub schema parse to throw a non-Error so the `instanceof Error` branch is exercised.
+    const { metrcTransferSchema } = await import("../src/schemas/index.js");
+    const spy = vi.spyOn(metrcTransferSchema, "parse").mockImplementation(() => { throw "string-fail"; });
+    try {
+      const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+      let caught: unknown;
+      await client.getIncomingTransfers().catch((e) => { caught = e; });
+      expect(caught).toBeInstanceOf(MetrcResponseError);
+      expect((caught as MetrcResponseError).message).toBe("validation failed");
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
