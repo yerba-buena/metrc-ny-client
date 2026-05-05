@@ -9,7 +9,7 @@ export interface MetrcConfig {
   licenseNumber: string;
   baseUrl: string;
   logger?: Logger;
-  fetch?: typeof fetch;
+  fetch?: (url: string, init?: RequestInit) => Promise<Response>;
   rateLimitMs?: number;
   retry?: Partial<RetryConfig>;
   validateResponses?: boolean;
