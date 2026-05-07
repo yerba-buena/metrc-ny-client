@@ -28,10 +28,8 @@ describe("createMockMetrcClient", () => {
     const result = await client.getDeliveriesWithPackages();
     const transfers = await client.getIncomingTransfers();
     expect(result.length).toBe(transfers.length);
-    for (const dwp of result) {
-      expect(dwp.transfer).toBeDefined();
-      expect(Array.isArray(dwp.packages)).toBe(true);
-    }
+    expect(result[0]!.transfer.Id).toBe(transfers[0]!.Id);
+    expect(result[0]!.packages.length).toBe(2);
   });
 
   it("override fixtures replace the defaults entirely", async () => {
