@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema } from "../src/schemas/index.js";
+import { metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema, metrcLocationSchema, metrcActivePackageSchema } from "../src/schemas/index.js";
 
 const sampleTransfer = {
   Id: 1, ManifestNumber: "M-1", ShipmentLicenseType: "Adult Use",
@@ -65,6 +65,96 @@ describe("metrcPackageSchema", () => {
     const bad: Record<string, unknown> = { ...samplePackage };
     delete bad.PackageLabel;
     expect(() => metrcPackageSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleLocation = {
+  Id: 1, Name: "Fulfillment", LocationTypeId: 1, LocationTypeName: "Default",
+  ForPlantBatches: false, ForPlants: false, ForHarvests: false, ForPackages: true,
+};
+
+const sampleActivePackage = {
+  Id: 5001, Label: "1A4FF0300000001000000101", ExternalId: null,
+  PackageType: "Product", SourceHarvestCount: 1, SourcePackageCount: 0,
+  SourceProcessingJobCount: 0, SourceHarvestNames: "Harvest 2026.04",
+  SourcePackageLabels: null, LocationId: 1, LocationName: "Fulfillment",
+  SublocationId: null, SublocationName: null, LocationTypeName: "Default",
+  Quantity: 25, OriginalPackageQuantity: 25, UnitOfMeasureName: "Each",
+  UnitOfMeasureAbbreviation: "ea", PatientLicenseNumber: null,
+  ItemFromFacilityLicenseNumber: null, ItemFromFacilityName: null,
+  Note: null, PackagedDate: "2026-04-20", ExpirationDate: null,
+  SellByDate: null, UseByDate: null, InitialLabTestingState: "TestPassed",
+  LabTestingState: "TestPassed", LabTestingStateDate: "2026-04-22",
+  LabTestingPerformedDate: null, LabTestResultExpirationDateTime: null,
+  LabTestingRecordedDate: null, LabTestStageId: null, LabTestStage: null,
+  IsProductionBatch: false, ProductionBatchNumber: null,
+  SourceProductionBatchNumbers: null, IsTradeSample: false,
+  IsTradeSamplePersistent: false, SourcePackageIsTradeSample: false,
+  IsDonation: false, IsDonationPersistent: false,
+  SourcePackageIsDonation: false, IsTestingSample: false,
+  IsProcessValidationTestingSample: false, ProductRequiresRemediation: false,
+  ContainsRemediatedProduct: false, RemediationDate: null,
+  ProductRequiresDecontamination: false, ContainsDecontaminatedProduct: false,
+  DecontaminationDate: null, ContainsPreTreatedProduct: false,
+  PreTreatmentDate: null, ReceivedDateTime: null,
+  ReceivedFromManifestNumber: null, ReceivedFromFacilityLicenseNumber: null,
+  ReceivedFromFacilityName: null, IsOnHold: false, IsOnHoldCombined: false,
+  IsOnInvestigation: false, IsOnInvestigationHold: false,
+  IsOnInvestigationRecall: false, IsOnRecall: null, IsOnRecallCombined: false,
+  ArchivedDate: null, IsFinished: false, FinishedDate: null,
+  IsFinishedGood: false, IsOnRetailerDelivery: false,
+  PackageForProductDestruction: null, LabelsLastGeneratedDateTime: null,
+  LastModified: "2026-04-28T10:00:00Z",
+  Item: {
+    Id: 1, Name: "Blue Dream 3.5g", GlobalProductName: null,
+    GlobalProductNumber: null, ProductCategoryName: "Flower",
+    ProductCategoryType: 0, QuantityType: 0, DefaultLabTestingState: 0,
+    UnitOfMeasureName: null, ApprovalStatus: 0,
+    ApprovalStatusDateTime: "0001-01-01T00:00:00+00:00",
+    StrainId: 1, StrainName: "Blue Dream", ItemBrandId: 0,
+    ItemBrandName: null, AdministrationMethod: null,
+    Description: null, IsUsed: false,
+  },
+  ProductLabel: {
+    QrCount: 1, IsChildFromParentWithLabel: false,
+    OriginalSourcePackageId: null, OriginalSourcePackageLabel: null,
+    LabelSource: null, IsActive: true,
+  },
+};
+
+describe("metrcLocationSchema", () => {
+  it("parses a well-formed location", () => {
+    expect(() => metrcLocationSchema.parse(sampleLocation)).not.toThrow();
+  });
+  it("rejects a location missing a required field", () => {
+    const bad: Record<string, unknown> = { ...sampleLocation };
+    delete bad.Name;
+    expect(() => metrcLocationSchema.parse(bad)).toThrow();
+  });
+  it("rejects a location with wrong type on Id", () => {
+    const bad = { ...sampleLocation, Id: "not-a-number" };
+    expect(() => metrcLocationSchema.parse(bad)).toThrow();
+  });
+  it("accepts null in nullable fields", () => {
+    expect(() => metrcLocationSchema.parse({ ...sampleLocation, LocationTypeId: null, LocationTypeName: null })).not.toThrow();
+  });
+});
+
+describe("metrcActivePackageSchema", () => {
+  it("parses a well-formed active package", () => {
+    expect(() => metrcActivePackageSchema.parse(sampleActivePackage)).not.toThrow();
+  });
+  it("rejects an active package missing Label", () => {
+    const bad: Record<string, unknown> = { ...sampleActivePackage };
+    delete bad.Label;
+    expect(() => metrcActivePackageSchema.parse(bad)).toThrow();
+  });
+  it("rejects an active package with wrong type on Quantity", () => {
+    const bad = { ...sampleActivePackage, Quantity: "not-a-number" };
+    expect(() => metrcActivePackageSchema.parse(bad)).toThrow();
+  });
+  it("accepts null in nullable fields", () => {
+    expect(() => metrcActivePackageSchema.parse({ ...sampleActivePackage, LocationId: null, LocationName: null })).not.toThrow();
   });
 });
 

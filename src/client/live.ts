@@ -1,8 +1,8 @@
 import type { MetrcClient, MetrcConfig } from "./interface.js";
 import { createRequester } from "../transport/request.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
-import { metrcTransferSchema, metrcPackageSchema } from "../schemas/index.js";
-import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages } from "../schemas/index.js";
+import { metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema } from "../schemas/index.js";
+import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages, MetrcLocation, MetrcActivePackage } from "../schemas/index.js";
 import { MetrcResponseError } from "../errors.js";
 import { NOOP_LOGGER } from "../logger.js";
 import { z } from "zod";
@@ -64,6 +64,18 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
         result.push({ transfer, packages });
       }
       return result;
+    },
+
+    async getActiveLocations(): Promise<MetrcLocation[]> {
+      const endpoint = "/locations/v2/active";
+      const data = await fetchAllPages<MetrcLocation>(paged<MetrcLocation>(endpoint), endpoint);
+      return validateArray(metrcLocationSchema, data, endpoint);
+    },
+
+    async getActivePackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/active";
+      const data = await fetchAllPages<MetrcActivePackage>(paged<MetrcActivePackage>(endpoint), endpoint);
+      return validateArray(metrcActivePackageSchema, data, endpoint);
     },
   };
 }

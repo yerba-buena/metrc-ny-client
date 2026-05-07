@@ -1,5 +1,5 @@
 // src/client/interface.ts
-import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages } from "../schemas/index.js";
+import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages, MetrcLocation, MetrcActivePackage } from "../schemas/index.js";
 import type { Logger } from "../logger.js";
 import type { RetryConfig } from "../transport/retry.js";
 
@@ -19,4 +19,6 @@ export interface MetrcClient {
   getIncomingTransfers(): Promise<MetrcTransfer[]>;
   getPackagesForDelivery(deliveryId: number): Promise<MetrcPackage[]>;
   getDeliveriesWithPackages(): Promise<DeliveryWithPackages[]>;
+  getActiveLocations(): Promise<MetrcLocation[]>;
+  getActivePackages(): Promise<MetrcActivePackage[]>;
 }

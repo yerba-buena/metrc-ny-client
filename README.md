@@ -10,8 +10,10 @@ This package implements a **small subset** of the METRC API — only the endpoin
 |----------|--------|-------------|
 | `/transfers/v2/incoming` | GET | List incoming transfers |
 | `/transfers/v2/deliveries/{id}/packages` | GET | List packages for a delivery |
+| `/locations/v2/active` | GET | List active locations |
+| `/packages/v2/active` | GET | List active inventory packages |
 
-**Not implemented** (non-exhaustive): packages, items, locations, sales, plants, plant batches, harvests, lab tests, strains, employees, tags, processing jobs, patients, caregivers, transporters, sublocations, units of measure, waste methods, and all write operations (POST/PUT/DELETE).
+**Not implemented** (non-exhaustive): items, sales, plants, plant batches, harvests, lab tests, strains, employees, tags, processing jobs, patients, caregivers, transporters, sublocations, units of measure, waste methods, and all write operations (POST/PUT/DELETE).
 
 New endpoints are added as needed. If you're looking for a full-featured METRC client, this isn't it.
 
