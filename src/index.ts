@@ -1,11 +1,12 @@
 // src/index.ts
 export {
   metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
-  deliveryWithPackagesSchema,
+  deliveryWithPackagesSchema, metrcLocationSchema, metrcActivePackageSchema,
 } from "./schemas/index.js";
 
 export type {
   MetrcTransfer, MetrcPackage, MetrcDelivery, DeliveryWithPackages,
+  MetrcLocation, MetrcActivePackage,
 } from "./schemas/index.js";
 
 export type { MetrcClient, MetrcConfig } from "./client/interface.js";

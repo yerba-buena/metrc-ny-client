@@ -1,9 +1,11 @@
 import type { MetrcClient } from "./interface.js";
-import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages } from "../schemas/index.js";
+import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages, MetrcLocation, MetrcActivePackage } from "../schemas/index.js";
 
 export interface MockFixtures {
   transfers: MetrcTransfer[];
   packagesByDeliveryId: Record<number, MetrcPackage[]>;
+  locations: MetrcLocation[];
+  activePackages: MetrcActivePackage[];
 }
 
 const DEFAULT_TRANSFER: MetrcTransfer = {
@@ -94,9 +96,157 @@ const DEFAULT_PACKAGE_B: MetrcPackage = {
   ShippedQuantity: 30,
 };
 
+const DEFAULT_LOCATION_FULFILLMENT: MetrcLocation = {
+  Id: 1,
+  Name: "Fulfillment",
+  LocationTypeId: 1,
+  LocationTypeName: "Default",
+  ForPlantBatches: false,
+  ForPlants: false,
+  ForHarvests: false,
+  ForPackages: true,
+};
+
+const DEFAULT_LOCATION_VAULT: MetrcLocation = {
+  Id: 2,
+  Name: "Vault",
+  LocationTypeId: 1,
+  LocationTypeName: "Default",
+  ForPlantBatches: false,
+  ForPlants: false,
+  ForHarvests: false,
+  ForPackages: true,
+};
+
+const DEFAULT_ITEM_A = {
+  Id: 1,
+  Name: "Mock Flower 3.5g",
+  GlobalProductName: null,
+  GlobalProductNumber: null,
+  ProductCategoryName: "Flower",
+  ProductCategoryType: 0,
+  QuantityType: 0,
+  DefaultLabTestingState: 0,
+  UnitOfMeasureName: null,
+  ApprovalStatus: 0,
+  ApprovalStatusDateTime: "0001-01-01T00:00:00+00:00",
+  StrainId: 1,
+  StrainName: "Mock Strain",
+  ItemBrandId: 0,
+  ItemBrandName: null,
+  AdministrationMethod: null,
+  Description: null,
+  IsUsed: false,
+};
+
+const DEFAULT_PRODUCT_LABEL = {
+  QrCount: 1,
+  IsChildFromParentWithLabel: false,
+  OriginalSourcePackageId: null,
+  OriginalSourcePackageLabel: null,
+  LabelSource: null,
+  IsActive: true,
+};
+
+const DEFAULT_ACTIVE_PACKAGE_A: MetrcActivePackage = {
+  Id: 5001,
+  Label: "1A4FF0300000001000000101",
+  ExternalId: null,
+  PackageType: "Product",
+  SourceHarvestCount: 1,
+  SourcePackageCount: 0,
+  SourceProcessingJobCount: 0,
+  SourceHarvestNames: "Mock Harvest 2026.04",
+  SourcePackageLabels: null,
+  LocationId: 1,
+  LocationName: "Fulfillment",
+  SublocationId: null,
+  SublocationName: null,
+  LocationTypeName: "Default",
+  Quantity: 25,
+  OriginalPackageQuantity: 25,
+  UnitOfMeasureName: "Each",
+  UnitOfMeasureAbbreviation: "ea",
+  PatientLicenseNumber: null,
+  ItemFromFacilityLicenseNumber: null,
+  ItemFromFacilityName: null,
+  Note: null,
+  PackagedDate: "2026-04-20",
+  ExpirationDate: null,
+  SellByDate: null,
+  UseByDate: null,
+  InitialLabTestingState: "TestPassed",
+  LabTestingState: "TestPassed",
+  LabTestingStateDate: "2026-04-22",
+  LabTestingPerformedDate: null,
+  LabTestResultExpirationDateTime: null,
+  LabTestingRecordedDate: null,
+  LabTestStageId: null,
+  LabTestStage: null,
+  IsProductionBatch: false,
+  ProductionBatchNumber: null,
+  SourceProductionBatchNumbers: null,
+  IsTradeSample: false,
+  IsTradeSamplePersistent: false,
+  SourcePackageIsTradeSample: false,
+  IsDonation: false,
+  IsDonationPersistent: false,
+  SourcePackageIsDonation: false,
+  IsTestingSample: false,
+  IsProcessValidationTestingSample: false,
+  ProductRequiresRemediation: false,
+  ContainsRemediatedProduct: false,
+  RemediationDate: null,
+  ProductRequiresDecontamination: false,
+  ContainsDecontaminatedProduct: false,
+  DecontaminationDate: null,
+  ContainsPreTreatedProduct: false,
+  PreTreatmentDate: null,
+  ReceivedDateTime: null,
+  ReceivedFromManifestNumber: null,
+  ReceivedFromFacilityLicenseNumber: null,
+  ReceivedFromFacilityName: null,
+  IsOnHold: false,
+  IsOnHoldCombined: false,
+  IsOnInvestigation: false,
+  IsOnInvestigationHold: false,
+  IsOnInvestigationRecall: false,
+  IsOnRecall: null,
+  IsOnRecallCombined: false,
+  ArchivedDate: null,
+  IsFinished: false,
+  FinishedDate: null,
+  IsFinishedGood: false,
+  IsOnRetailerDelivery: false,
+  PackageForProductDestruction: null,
+  LabelsLastGeneratedDateTime: null,
+  LastModified: "2026-04-28T10:00:00Z",
+  Item: DEFAULT_ITEM_A,
+  ProductLabel: DEFAULT_PRODUCT_LABEL,
+};
+
+const DEFAULT_ACTIVE_PACKAGE_B: MetrcActivePackage = {
+  ...DEFAULT_ACTIVE_PACKAGE_A,
+  Id: 5002,
+  Label: "1A4FF0300000001000000102",
+  LocationId: 2,
+  LocationName: "Vault",
+  Quantity: 10,
+  Item: {
+    ...DEFAULT_ITEM_A,
+    Id: 2,
+    Name: "Mock Pre-Roll 1g",
+    ProductCategoryName: "Pre-Rolls",
+    StrainId: 2,
+    StrainName: "Mock Strain B",
+  },
+};
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   packagesByDeliveryId: { 1001: [DEFAULT_PACKAGE_A, DEFAULT_PACKAGE_B] },
+  locations: [DEFAULT_LOCATION_FULFILLMENT, DEFAULT_LOCATION_VAULT],
+  activePackages: [DEFAULT_ACTIVE_PACKAGE_A, DEFAULT_ACTIVE_PACKAGE_B],
 };
 
 export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXTURES): MetrcClient {
@@ -112,6 +262,12 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
         transfer: t,
         packages: [...(fixtures.packagesByDeliveryId[t.DeliveryId] ?? [])],
       }));
+    },
+    async getActiveLocations(): Promise<MetrcLocation[]> {
+      return [...fixtures.locations];
+    },
+    async getActivePackages(): Promise<MetrcActivePackage[]> {
+      return [...fixtures.activePackages];
     },
   };
 }

@@ -149,6 +149,98 @@ describe("createLiveMetrcClient", () => {
     expect(result).toEqual([]);
   });
 
+  it("getActiveLocations calls /locations/v2/active and returns Data", async () => {
+    let capturedUrl = "";
+    const fakeLocation = {
+      Id: 1, Name: "Fulfillment", LocationTypeId: 1, LocationTypeName: "Default",
+      ForPlantBatches: false, ForPlants: false, ForHarvests: false, ForPackages: true,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeLocation]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getActiveLocations();
+    expect(capturedUrl).toContain("/locations/v2/active");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Id).toBe(1);
+    expect(result[0]!.Name).toBe("Fulfillment");
+  });
+
+  it("getActivePackages calls /packages/v2/active and returns Data", async () => {
+    let capturedUrl = "";
+    const fakeActivePkg = {
+      Id: 5001, Label: "LBL-5001", ExternalId: null, PackageType: "Product",
+      SourceHarvestCount: 0, SourcePackageCount: 0, SourceProcessingJobCount: 0,
+      SourceHarvestNames: null, SourcePackageLabels: null,
+      LocationId: 1, LocationName: "Fulfillment", SublocationId: null,
+      SublocationName: null, LocationTypeName: "Default",
+      Quantity: 25, OriginalPackageQuantity: 25, UnitOfMeasureName: "Each",
+      UnitOfMeasureAbbreviation: "ea", PatientLicenseNumber: null,
+      ItemFromFacilityLicenseNumber: null, ItemFromFacilityName: null,
+      Note: null, PackagedDate: "2026-04-20", ExpirationDate: null,
+      SellByDate: null, UseByDate: null,
+      InitialLabTestingState: "NotSubmitted", LabTestingState: "NotSubmitted",
+      LabTestingStateDate: "2026-04-20", LabTestingPerformedDate: null,
+      LabTestResultExpirationDateTime: null, LabTestingRecordedDate: null,
+      LabTestStageId: null, LabTestStage: null,
+      IsProductionBatch: false, ProductionBatchNumber: null,
+      SourceProductionBatchNumbers: null,
+      IsTradeSample: false, IsTradeSamplePersistent: false,
+      SourcePackageIsTradeSample: false,
+      IsDonation: false, IsDonationPersistent: false,
+      SourcePackageIsDonation: false,
+      IsTestingSample: false, IsProcessValidationTestingSample: false,
+      ProductRequiresRemediation: false, ContainsRemediatedProduct: false,
+      RemediationDate: null, ProductRequiresDecontamination: false,
+      ContainsDecontaminatedProduct: false, DecontaminationDate: null,
+      ContainsPreTreatedProduct: false, PreTreatmentDate: null,
+      ReceivedDateTime: null, ReceivedFromManifestNumber: null,
+      ReceivedFromFacilityLicenseNumber: null, ReceivedFromFacilityName: null,
+      IsOnHold: false, IsOnHoldCombined: false, IsOnInvestigation: false,
+      IsOnInvestigationHold: false, IsOnInvestigationRecall: false,
+      IsOnRecall: null, IsOnRecallCombined: false,
+      ArchivedDate: null, IsFinished: false, FinishedDate: null,
+      IsFinishedGood: false, IsOnRetailerDelivery: false,
+      PackageForProductDestruction: null, LabelsLastGeneratedDateTime: null,
+      LastModified: "2026-04-28T10:00:00Z",
+      Item: {
+        Id: 1, Name: "Item", GlobalProductName: null, GlobalProductNumber: null,
+        ProductCategoryName: "Flower", ProductCategoryType: 0, QuantityType: 0,
+        DefaultLabTestingState: 0, UnitOfMeasureName: null, ApprovalStatus: 0,
+        ApprovalStatusDateTime: "0001-01-01T00:00:00+00:00",
+        StrainId: null, StrainName: null, ItemBrandId: 0, ItemBrandName: null,
+        AdministrationMethod: null, Description: null, IsUsed: false,
+      },
+      ProductLabel: {
+        QrCount: 1, IsChildFromParentWithLabel: false,
+        OriginalSourcePackageId: null, OriginalSourcePackageLabel: null,
+        LabelSource: null, IsActive: true,
+      },
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeActivePkg]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getActivePackages();
+    expect(capturedUrl).toContain("/packages/v2/active");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Id).toBe(5001);
+  });
+
+  it("validateResponses=true rejects malformed locations via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a location" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getActiveLocations()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("validateResponses=true rejects malformed active packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "an active package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getActivePackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
   it("validateResponses=true wraps non-Error throws into MetrcResponseError", async () => {
     const fetch = vi.fn(async () => okEnvelope([{}]) as unknown as Response);
     // Stub schema parse to throw a non-Error so the `instanceof Error` branch is exercised.

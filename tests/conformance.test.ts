@@ -3,8 +3,8 @@ import { createLiveMetrcClient } from "../src/client/live.js";
 import { createMockMetrcClient, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import { NOOP_LOGGER } from "../src/logger.js";
 import type { MetrcClient } from "../src/client/interface.js";
-import type { MetrcTransfer, MetrcPackage } from "../src/schemas/index.js";
-import { metrcTransferSchema, metrcPackageSchema } from "../src/schemas/index.js";
+import type { MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage } from "../src/schemas/index.js";
+import { metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema } from "../src/schemas/index.js";
 
 const okEnvelope = (data: unknown[]) => ({
   ok: true, status: 200, headers: new Headers(),
@@ -15,9 +15,16 @@ const okEnvelope = (data: unknown[]) => ({
   text: async () => "",
 });
 
-function makeLiveClientFromFixtures(transfers: MetrcTransfer[], packagesByDeliveryId: Record<number, MetrcPackage[]>): MetrcClient {
+function makeLiveClientFromFixtures(
+  transfers: MetrcTransfer[],
+  packagesByDeliveryId: Record<number, MetrcPackage[]>,
+  locations: MetrcLocation[],
+  activePackages: MetrcActivePackage[],
+): MetrcClient {
   const fetch = vi.fn(async (url: string) => {
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
+    if (url.includes("/locations/v2/active")) return okEnvelope(locations) as unknown as Response;
+    if (url.includes("/packages/v2/active")) return okEnvelope(activePackages) as unknown as Response;
     const m = url.match(/\/deliveries\/(\d+)\/packages/);
     if (m) {
       const id = parseInt(m[1]!, 10);
@@ -36,7 +43,7 @@ function makeLiveClientFromFixtures(transfers: MetrcTransfer[], packagesByDelive
 const fixtures = DEFAULT_MOCK_FIXTURES;
 const variants: Array<[string, () => MetrcClient]> = [
   ["mock", () => createMockMetrcClient(fixtures)],
-  ["live (with stubbed fetch)", () => makeLiveClientFromFixtures(fixtures.transfers, fixtures.packagesByDeliveryId)],
+  ["live (with stubbed fetch)", () => makeLiveClientFromFixtures(fixtures.transfers, fixtures.packagesByDeliveryId, fixtures.locations, fixtures.activePackages)],
 ];
 
 describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) => {
@@ -53,8 +60,9 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
   it("getPackagesForDelivery returns packages that parse as MetrcPackage", async () => {
     const client = makeClient();
     const transfers = await client.getIncomingTransfers();
-    if (transfers.length === 0) return;
+    expect(transfers.length).toBeGreaterThan(0);
     const pkgs = await client.getPackagesForDelivery(transfers[0]!.DeliveryId);
+    expect(pkgs.length).toBeGreaterThan(0);
     for (const p of pkgs) expect(() => metrcPackageSchema.parse(p)).not.toThrow();
   });
 
@@ -64,5 +72,19 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const dwps = await client.getDeliveriesWithPackages();
     expect(dwps.length).toBe(transfers.length);
     expect(dwps.map(d => d.transfer.DeliveryId).sort()).toEqual(transfers.map(t => t.DeliveryId).sort());
+  });
+
+  it("getActiveLocations returns locations that parse as MetrcLocation", async () => {
+    const client = makeClient();
+    const result = await client.getActiveLocations();
+    expect(result.length).toBe(fixtures.locations.length);
+    for (const loc of result) expect(() => metrcLocationSchema.parse(loc)).not.toThrow();
+  });
+
+  it("getActivePackages returns packages that parse as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const result = await client.getActivePackages();
+    expect(result.length).toBe(fixtures.activePackages.length);
+    for (const p of result) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
   });
 });
