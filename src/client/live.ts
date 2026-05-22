@@ -22,9 +22,10 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
     retry: config.retry,
   });
 
-  function paged<T>(endpoint: string) {
+  function paged<T>(endpoint: string, extraParams: Record<string, string> = {}) {
     return async function fetchPage(pageNumber: number) {
       return request<PaginatedResponse<T>>(endpoint, {
+        ...extraParams,
         pageNumber: String(pageNumber),
         pageSize: "20",
       });
@@ -68,7 +69,16 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
 
     async getActiveLocations(): Promise<MetrcLocation[]> {
       const endpoint = "/locations/v2/active";
-      const data = await fetchAllPages<MetrcLocation>(paged<MetrcLocation>(endpoint), endpoint);
+      // METRC's /locations/v2/active returns an empty list (HTTP 200, no error)
+      // unless BOTH lastModifiedStart and lastModifiedEnd are supplied. Use a
+      // wide window so every active location is returned regardless of last edit.
+      const data = await fetchAllPages<MetrcLocation>(
+        paged<MetrcLocation>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
       return validateArray(metrcLocationSchema, data, endpoint);
     },
 

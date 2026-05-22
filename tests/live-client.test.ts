@@ -167,6 +167,33 @@ describe("createLiveMetrcClient", () => {
     expect(result[0]!.Name).toBe("Fulfillment");
   });
 
+  it("getActiveLocations sends a valid, current lastModifiedStart/End window", async () => {
+    // METRC's /locations/v2/active returns an empty list (HTTP 200, no error)
+    // unless BOTH lastModifiedStart and lastModifiedEnd query params are sent.
+    vi.setSystemTime(new Date("2026-05-22T12:00:00Z"));
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await client.getActiveLocations();
+
+    expect(capturedUrl).toContain("/locations/v2/active");
+    const params = new URL(capturedUrl).searchParams;
+    const start = params.get("lastModifiedStart");
+    const end = params.get("lastModifiedEnd");
+
+    // Both params present with non-empty, real ISO-8601 date values.
+    expect(start).toBeTruthy();
+    expect(end).toBeTruthy();
+    expect(Number.isNaN(Date.parse(start!))).toBe(false);
+    expect(Number.isNaN(Date.parse(end!))).toBe(false);
+    // Window is ordered, and the end tracks "now" (not a stale hardcoded value).
+    expect(Date.parse(start!)).toBeLessThan(Date.parse(end!));
+    expect(end).toContain("2026-05-22");
+  });
+
   it("getActivePackages calls /packages/v2/active and returns Data", async () => {
     let capturedUrl = "";
     const fakeActivePkg = {
