@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { createMockMetrcClient, type MockFixtures, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
-import { metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema } from "../src/schemas/index.js";
+import {
+  metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+} from "../src/schemas/index.js";
 
 describe("createMockMetrcClient", () => {
   it("returns default fixtures when none are passed", async () => {
@@ -38,12 +41,20 @@ describe("createMockMetrcClient", () => {
       packagesByDeliveryId: {},
       locations: [],
       activePackages: [],
+      items: [],
+      salesReceipts: [],
+      salesReceiptDetailsById: {},
     };
     const client = createMockMetrcClient(fixtures);
     expect(await client.getIncomingTransfers()).toEqual([]);
     expect(await client.getDeliveriesWithPackages()).toEqual([]);
     expect(await client.getActiveLocations()).toEqual([]);
     expect(await client.getActivePackages()).toEqual([]);
+    expect(await client.getActiveItems()).toEqual([]);
+    expect(await client.getActiveSalesReceipts({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T00:00:00Z",
+    })).toEqual([]);
   });
 
   it("getPackagesForDelivery returns the fixture mapped for that delivery id", async () => {
@@ -104,5 +115,43 @@ describe("createMockMetrcClient", () => {
     const b = await client.getActivePackages();
     expect(a).toEqual(b);
     expect(a).not.toBe(b);
+  });
+
+  it("default items parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const items = await client.getActiveItems();
+    expect(items.length).toBeGreaterThan(0);
+    for (const it of items) expect(() => metrcItemSchema.parse(it)).not.toThrow();
+  });
+
+  it("getActiveItems returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getActiveItems();
+    const b = await client.getActiveItems();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default sales receipts parse against the list-shape schema", async () => {
+    const client = createMockMetrcClient();
+    const receipts = await client.getActiveSalesReceipts({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T00:00:00Z",
+    });
+    expect(receipts.length).toBeGreaterThan(0);
+    for (const r of receipts) expect(() => metrcSalesReceiptSchema.parse(r)).not.toThrow();
+  });
+
+  it("getSalesReceiptById returns a populated detail with parseable transactions", async () => {
+    const client = createMockMetrcClient();
+    const detail = await client.getSalesReceiptById(7001);
+    expect(() => metrcSalesReceiptDetailSchema.parse(detail)).not.toThrow();
+    expect(detail.Transactions.length).toBeGreaterThan(0);
+    expect(detail.Transactions[0]!.PackageLabel).toBeTruthy();
+  });
+
+  it("getSalesReceiptById throws for an unknown receipt id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getSalesReceiptById(999999)).rejects.toThrow(/no sales receipt fixture/);
   });
 });

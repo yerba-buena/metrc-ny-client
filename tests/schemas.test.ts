@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema, metrcLocationSchema, metrcActivePackageSchema } from "../src/schemas/index.js";
+import {
+  metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
+  metrcLocationSchema, metrcActivePackageSchema,
+  metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+  metrcSalesTransactionSchema,
+} from "../src/schemas/index.js";
 
 const sampleTransfer = {
   Id: 1, ManifestNumber: "M-1", ShipmentLicenseType: "Adult Use",
@@ -172,5 +177,150 @@ describe("metrcDeliverySchema", () => {
       ActualReturnArrivalDateTime: null,
     };
     expect(() => metrcDeliverySchema.parse(sample)).not.toThrow();
+  });
+});
+
+// Captured from a real /items/v2/active response in prod (May 2026):
+// item Id=657627, Vape Cartridge SKU. Used to verify the schema parses real data.
+const sampleItem = {
+  Id: 657627,
+  Name: "*Sample* Jetty | Wedding Cake Solventless Mini Tank | AlO | 1g",
+  GlobalProductName: null,
+  GlobalProductNumber: null,
+  ProductCategoryName: "Vape Cartridge - Each",
+  ProductCategoryType: "Concentrate",
+  IsExpirationDateRequired: true,
+  HasExpirationDate: true,
+  QuantityType: "CountBased",
+  DefaultLabTestingState: "NotSubmitted",
+  UnitOfMeasureName: "Each",
+  ApprovalStatus: "Approved",
+  ApprovalStatusDateTime: "2025-12-17T18:43:00+00:00",
+  StrainId: null,
+  StrainName: null,
+  ItemBrandId: 0,
+  ItemBrandName: null,
+  AdministrationMethod: "",
+  UnitThcContent: 81,
+  UnitThcContentUnitOfMeasureName: "Milligrams",
+  UnitWeight: 1,
+  UnitWeightUnitOfMeasureName: "Grams",
+  PublicIngredients: "cannabis",
+  Description: "",
+  ProductImages: [],
+  IsUsed: true,
+  CreatedDateTime: "2025-12-17T18:42:59.61+00:00",
+  LabTestBatchNames: [],
+};
+
+describe("metrcItemSchema", () => {
+  it("parses a real captured /items/v2/active sample", () => {
+    expect(() => metrcItemSchema.parse(sampleItem)).not.toThrow();
+  });
+  it("preserves unknown passthrough fields", () => {
+    const parsed = metrcItemSchema.parse(sampleItem);
+    // UnitThcContent is not declared in the schema but should survive via .passthrough()
+    expect((parsed as Record<string, unknown>).UnitThcContent).toBe(81);
+  });
+  it("rejects when Name is missing", () => {
+    const bad: Record<string, unknown> = { ...sampleItem };
+    delete bad.Name;
+    expect(() => metrcItemSchema.parse(bad)).toThrow();
+  });
+  it("rejects when ProductCategoryType is not a string", () => {
+    expect(() => metrcItemSchema.parse({ ...sampleItem, ProductCategoryType: 0 })).toThrow();
+  });
+  it("accepts null StrainId/StrainName/UnitOfMeasureName", () => {
+    expect(() => metrcItemSchema.parse({
+      ...sampleItem, StrainId: null, StrainName: null, UnitOfMeasureName: null,
+    })).not.toThrow();
+  });
+});
+
+// Captured from a real /sales/v2/receipts/active list entry (prod, May 2026).
+const sampleReceiptListEntry = {
+  Id: 12769278,
+  ReceiptNumber: "0012769278",
+  ExternalReceiptNumber: "26102742-3fa1-442b-acb4-3596b3623af4",
+  SalesDateTime: "2026-05-24T10:53:19.570",
+  SalesCustomerType: "Consumer",
+  PatientLicenseNumber: "",
+  CaregiverLicenseNumber: "",
+  IdentificationMethod: "",
+  PatientRegistrationLocationId: null,
+  TotalPackages: 1,
+  TotalPrice: 92.04,
+  Transactions: [],
+  IsFinal: false,
+  ArchivedDate: null,
+  RecordedDateTime: "2026-05-24T14:53:21+00:00",
+  RecordedByUserName: "John Colon",
+  LastModified: "2026-05-24T14:53:21+00:00",
+};
+
+// Captured from /sales/v2/receipts/{id} for the same receipt — Transactions populated.
+const sampleTransaction = {
+  PackageId: 1675227,
+  TripId: null,
+  PackageLabel: "1A412030000132A000003132",
+  ProductName: "Weekenders: Tropicana cookies 7 pack Glow",
+  ProductCategoryName: "Raw Pre-Roll - Each",
+  ItemStrainName: "Tropicana Cookies",
+  ItemUnitThcPercent: 0.00,
+  ItemUnitWeight: 1.0,
+  ItemUnitWeightUnitOfMeasureName: "Grams",
+  QuantitySold: 2.0,
+  UnitOfMeasureName: "Each",
+  UnitOfMeasureAbbreviation: "ea",
+  UnitWeight: 1.0,
+  TotalPrice: 92.04,
+  ArchivedDate: null,
+  RecordedDateTime: "0001-01-01T00:00:00+00:00",
+  RecordedByUserName: null,
+  LastModified: "2026-05-24T14:53:21+00:00",
+  InvoiceNumber: "JhAnQj-hRCustDWWs2I69A",
+  Price: 92.04,
+  DiscountAmount: 0.00,
+  SubTotal: 104.00,
+};
+const sampleReceiptDetail = { ...sampleReceiptListEntry, Transactions: [sampleTransaction] };
+
+describe("metrcSalesTransactionSchema", () => {
+  it("parses a real captured sales transaction line item", () => {
+    expect(() => metrcSalesTransactionSchema.parse(sampleTransaction)).not.toThrow();
+  });
+  it("rejects when PackageLabel is missing", () => {
+    const bad: Record<string, unknown> = { ...sampleTransaction };
+    delete bad.PackageLabel;
+    expect(() => metrcSalesTransactionSchema.parse(bad)).toThrow();
+  });
+  it("accepts null ItemStrainName (non-strain products)", () => {
+    expect(() => metrcSalesTransactionSchema.parse({ ...sampleTransaction, ItemStrainName: null })).not.toThrow();
+  });
+});
+
+describe("metrcSalesReceiptSchema (list shape)", () => {
+  it("parses a real captured list entry with empty Transactions", () => {
+    expect(() => metrcSalesReceiptSchema.parse(sampleReceiptListEntry)).not.toThrow();
+  });
+  it("rejects when ReceiptNumber is missing", () => {
+    const bad: Record<string, unknown> = { ...sampleReceiptListEntry };
+    delete bad.ReceiptNumber;
+    expect(() => metrcSalesReceiptSchema.parse(bad)).toThrow();
+  });
+  it("accepts a populated Transactions array (detail-shaped payload)", () => {
+    expect(() => metrcSalesReceiptSchema.parse(sampleReceiptDetail)).not.toThrow();
+  });
+});
+
+describe("metrcSalesReceiptDetailSchema", () => {
+  it("parses a real captured receipt detail (Transactions populated)", () => {
+    const parsed = metrcSalesReceiptDetailSchema.parse(sampleReceiptDetail);
+    expect(parsed.Transactions.length).toBe(1);
+    expect(parsed.Transactions[0]!.PackageLabel).toBe("1A412030000132A000003132");
+  });
+  it("rejects when Transactions contains an invalid line item", () => {
+    const bad = { ...sampleReceiptDetail, Transactions: [{ ...sampleTransaction, QuantitySold: "two" }] };
+    expect(() => metrcSalesReceiptDetailSchema.parse(bad)).toThrow();
   });
 });

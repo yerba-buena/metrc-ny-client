@@ -2,14 +2,17 @@
 export {
   metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
   deliveryWithPackagesSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+  metrcSalesTransactionSchema,
 } from "./schemas/index.js";
 
 export type {
   MetrcTransfer, MetrcPackage, MetrcDelivery, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage,
+  MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail, MetrcSalesTransaction,
 } from "./schemas/index.js";
 
-export type { MetrcClient, MetrcConfig } from "./client/interface.js";
+export type { MetrcClient, MetrcConfig, SalesReceiptsWindow } from "./client/interface.js";
 export type { Logger } from "./logger.js";
 export { NOOP_LOGGER } from "./logger.js";
 export type { RetryConfig } from "./transport/retry.js";

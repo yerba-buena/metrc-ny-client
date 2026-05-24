@@ -1,8 +1,15 @@
-import type { MetrcClient, MetrcConfig } from "./interface.js";
+import type { MetrcClient, MetrcConfig, SalesReceiptsWindow } from "./interface.js";
 import { createRequester } from "../transport/request.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
-import { metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema } from "../schemas/index.js";
-import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages, MetrcLocation, MetrcActivePackage } from "../schemas/index.js";
+import {
+  metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+} from "../schemas/index.js";
+import type {
+  MetrcTransfer, MetrcPackage, DeliveryWithPackages,
+  MetrcLocation, MetrcActivePackage,
+  MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+} from "../schemas/index.js";
 import { MetrcResponseError } from "../errors.js";
 import { NOOP_LOGGER } from "../logger.js";
 import { z } from "zod";
@@ -36,6 +43,18 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
     if (!validate) return data as T[];
     try {
       return data.map((d) => schema.parse(d));
+    } catch (err) {
+      throw new MetrcResponseError(
+        err instanceof Error ? err.message : "validation failed",
+        { endpoint, method: "GET", cause: err },
+      );
+    }
+  }
+
+  function validateOne<T>(schema: z.ZodType<T>, data: unknown, endpoint: string): T {
+    if (!validate) return data as T;
+    try {
+      return schema.parse(data);
     } catch (err) {
       throw new MetrcResponseError(
         err instanceof Error ? err.message : "validation failed",
@@ -86,6 +105,53 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       const endpoint = "/packages/v2/active";
       const data = await fetchAllPages<MetrcActivePackage>(paged<MetrcActivePackage>(endpoint), endpoint);
       return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    async getActiveItems(): Promise<MetrcItem[]> {
+      const endpoint = "/items/v2/active";
+      // Same convention as /locations/v2/active: pass a wide LastModified window
+      // so every active item is returned regardless of when it was last edited.
+      const data = await fetchAllPages<MetrcItem>(
+        paged<MetrcItem>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcItemSchema, data, endpoint);
+    },
+
+    async getActiveSalesReceipts(window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]> {
+      const endpoint = "/sales/v2/receipts/active";
+      // METRC's /sales/v2/receipts/active returns 0 rows when called without
+      // a LastModified window. Guard at the boundary so a caller bypassing
+      // TypeScript can't silently produce an empty list.
+      if (
+        !window ||
+        typeof window.lastModifiedStart !== "string" ||
+        typeof window.lastModifiedEnd !== "string" ||
+        window.lastModifiedStart.length === 0 ||
+        window.lastModifiedEnd.length === 0
+      ) {
+        throw new TypeError(
+          "getActiveSalesReceipts requires { lastModifiedStart, lastModifiedEnd } as non-empty ISO-8601 strings",
+        );
+      }
+      const data = await fetchAllPages<MetrcSalesReceipt>(
+        paged<MetrcSalesReceipt>(endpoint, {
+          lastModifiedStart: window.lastModifiedStart,
+          lastModifiedEnd: window.lastModifiedEnd,
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSalesReceiptSchema, data, endpoint);
+    },
+
+    async getSalesReceiptById(id: number): Promise<MetrcSalesReceiptDetail> {
+      const endpoint = `/sales/v2/receipts/${id}`;
+      // Single-object GET, not paginated.
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcSalesReceiptDetailSchema, data, endpoint);
     },
   };
 }

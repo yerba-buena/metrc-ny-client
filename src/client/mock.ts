@@ -1,11 +1,18 @@
-import type { MetrcClient } from "./interface.js";
-import type { MetrcTransfer, MetrcPackage, DeliveryWithPackages, MetrcLocation, MetrcActivePackage } from "../schemas/index.js";
+import type { MetrcClient, SalesReceiptsWindow } from "./interface.js";
+import type {
+  MetrcTransfer, MetrcPackage, DeliveryWithPackages,
+  MetrcLocation, MetrcActivePackage,
+  MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+} from "../schemas/index.js";
 
 export interface MockFixtures {
   transfers: MetrcTransfer[];
   packagesByDeliveryId: Record<number, MetrcPackage[]>;
   locations: MetrcLocation[];
   activePackages: MetrcActivePackage[];
+  items: MetrcItem[];
+  salesReceipts: MetrcSalesReceipt[];
+  salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
 }
 
 const DEFAULT_TRANSFER: MetrcTransfer = {
@@ -242,11 +249,87 @@ const DEFAULT_ACTIVE_PACKAGE_B: MetrcActivePackage = {
   },
 };
 
+const DEFAULT_ITEM_CATALOG_A: MetrcItem = {
+  Id: 1,
+  Name: "Mock Flower 3.5g",
+  ProductCategoryName: "Bud/Flower - Each",
+  ProductCategoryType: "Buds",
+  QuantityType: "CountBased",
+  UnitOfMeasureName: "Each",
+  StrainId: 1,
+  StrainName: "Mock Strain",
+  ItemBrandId: 0,
+  ItemBrandName: "Mock Brand",
+  ApprovalStatus: "Approved",
+  ApprovalStatusDateTime: "2026-01-01T00:00:00+00:00",
+  IsUsed: true,
+};
+
+const DEFAULT_ITEM_CATALOG_B: MetrcItem = {
+  Id: 2,
+  Name: "Mock Pre-Roll 1g",
+  ProductCategoryName: "Raw Pre-Roll - Each",
+  ProductCategoryType: "Buds",
+  QuantityType: "CountBased",
+  UnitOfMeasureName: "Each",
+  StrainId: 2,
+  StrainName: "Mock Strain B",
+  ItemBrandId: 0,
+  ItemBrandName: null,
+  ApprovalStatus: "Approved",
+  ApprovalStatusDateTime: "2026-01-15T00:00:00+00:00",
+  IsUsed: true,
+};
+
+const DEFAULT_SALES_TRANSACTION = {
+  PackageId: 5001,
+  PackageLabel: "1A4FF0300000001000000101",
+  ProductName: "Mock Flower 3.5g",
+  ProductCategoryName: "Bud/Flower - Each",
+  ItemStrainName: "Mock Strain",
+  QuantitySold: 2,
+  UnitOfMeasureName: "Each",
+  UnitOfMeasureAbbreviation: "ea",
+  TotalPrice: 80,
+  InvoiceNumber: "INV-MOCK-1",
+  RecordedDateTime: "2026-05-01T12:00:00+00:00",
+  RecordedByUserName: "mock-cashier",
+  LastModified: "2026-05-01T12:00:00+00:00",
+};
+
+const DEFAULT_RECEIPT_LIST_ENTRY: MetrcSalesReceipt = {
+  Id: 7001,
+  ReceiptNumber: "0000007001",
+  ExternalReceiptNumber: "mock-ext-7001",
+  SalesDateTime: "2026-05-01T12:00:00",
+  SalesCustomerType: "Consumer",
+  PatientLicenseNumber: "",
+  CaregiverLicenseNumber: "",
+  IdentificationMethod: "",
+  PatientRegistrationLocationId: null,
+  TotalPackages: 1,
+  TotalPrice: 80,
+  Transactions: [], // METRC list endpoint always returns empty transactions
+  IsFinal: false,
+  ArchivedDate: null,
+  RecordedDateTime: "2026-05-01T12:00:00+00:00",
+  RecordedByUserName: "mock-cashier",
+  LastModified: "2026-05-01T12:00:00+00:00",
+};
+
+const DEFAULT_RECEIPT_DETAIL_7001: MetrcSalesReceiptDetail = {
+  ...DEFAULT_RECEIPT_LIST_ENTRY,
+  Transactions: [DEFAULT_SALES_TRANSACTION],
+};
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   packagesByDeliveryId: { 1001: [DEFAULT_PACKAGE_A, DEFAULT_PACKAGE_B] },
   locations: [DEFAULT_LOCATION_FULFILLMENT, DEFAULT_LOCATION_VAULT],
   activePackages: [DEFAULT_ACTIVE_PACKAGE_A, DEFAULT_ACTIVE_PACKAGE_B],
+  items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
+  salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
+  salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
 };
 
 export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXTURES): MetrcClient {
@@ -268,6 +351,20 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getActivePackages(): Promise<MetrcActivePackage[]> {
       return [...fixtures.activePackages];
+    },
+    async getActiveItems(): Promise<MetrcItem[]> {
+      return [...fixtures.items];
+    },
+    async getActiveSalesReceipts(_window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]> {
+      void _window;
+      return [...fixtures.salesReceipts];
+    },
+    async getSalesReceiptById(id: number): Promise<MetrcSalesReceiptDetail> {
+      const detail = fixtures.salesReceiptDetailsById[id];
+      if (!detail) {
+        throw new Error(`mock: no sales receipt fixture for id ${id}`);
+      }
+      return { ...detail, Transactions: [...detail.Transactions] };
     },
   };
 }
