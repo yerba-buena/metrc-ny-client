@@ -1,8 +1,22 @@
 # Comprehensive METRC NY v2 read-coverage — design
 
 **Date:** 2026-05-24
-**Status:** Approved (sections A–D), pending written-spec review
-**Scope:** Grow `@yerba-buena/metrc-ny-client` from a deliberately small subset (4 GET endpoints) into comprehensive *read* coverage of the METRC NY v2 API, ordered for minimum work and risk. Write operations and cultivator-side resources are explicitly deferred and tracked as roadmap issues.
+**Status:** Approved (sections A–D); reconciled with remote agent commits `b86c7d5` and `8b1220c`.
+**Scope:** Grow `@yerba-buena/metrc-ny-client` from a small subset toward comprehensive *read* coverage of the dispensary-relevant METRC NY v2 API, ordered for minimum work and risk. Write operations and cultivator-side resources are explicitly deferred and tracked as roadmap issues.
+
+## Status snapshot at spec time
+
+Already on `main` and not to be re-planned:
+
+- `getIncomingTransfers`, `getPackagesForDelivery`, `getDeliveriesWithPackages` (composition / **enhancement** — retroactively label).
+- `getActiveLocations` (now with required wide LastModified window).
+- `getActivePackages`.
+- `getActiveItems` (P1 endpoint, **shipped**).
+- `getActiveSalesReceipts({lastModifiedStart, lastModifiedEnd})` (P3 endpoint, **shipped**).
+- `getSalesReceiptById(id)` (P3 endpoint, **shipped**; single-object GET, uses new `validateOne` helper).
+- `SalesReceiptsWindow` per-endpoint window type and `validateOne` single-object validator now exist in the codebase and are the precedent the rest of the spec follows.
+- 125 tests passing. 6 cosmetic unhandled-rejection warnings remain (P0 hygiene item).
+- Conformance suite still only covers the original 5 methods — items and sales receipts are NOT yet in `tests/conformance.test.ts` (P0 gap).
 
 ## Goals
 
@@ -38,15 +52,20 @@ Each phase ships as one PR titled `feat: phase N — <resource>`.
 - File roadmap issues for everything deferred (see "Issues filed in P0").
 - Add `CLIENT_COVERAGE` constant — a typed, exported map describing the per-resource status of the client. **Enhancement** (introspection helper, not part of the API).
 - Clean up the 6 cosmetic unhandled-rejection warnings in `npm test` output (attach `.catch` / `expect(...).rejects.*` before advancing fake timers in the affected transport tests).
+- Extend `tests/conformance.test.ts` to also cover the methods already on `main` but missing from conformance: `getActiveItems`, `getActiveSalesReceipts`, `getSalesReceiptById`. Same dual-variant (mock + stubbed live) shape as the existing entries.
+- Audit existing GET methods for the "silently empty without LastModified window" quirk: `/packages/v2/active`, `/transfers/v2/incoming`, and `/transfers/v2/deliveries/{id}/packages`. For each, capture a discovery sample with and without the window; document the result in the method's JSDoc; patch where required following the pattern used by `getActiveLocations` and `getActiveItems`.
+- Retroactively add the `API:` / `Enhancement:` JSDoc preamble to every existing method on `MetrcClient`. (Today none of them have it; future-phase code review depends on it being established.)
 
 ### P1 — Items resource
 
-| Type | Endpoint or helper | Notes |
-|---|---|---|
-| API | `GET /items/v2/active` → `getActiveItems()` | Item catalog. |
-| API | `GET /items/v2/categories` → `getItemCategories()` | |
-| Schema | `metrcItemSchema` / `MetrcItem` | From discovery sample. |
-| Schema | `metrcItemCategorySchema` / `MetrcItemCategory` | |
+| Type | Endpoint or helper | Status | Notes |
+|---|---|---|---|
+| API | `GET /items/v2/active` → `getActiveItems()` | **done** (remote commit `8b1220c`) | Uses wide LastModified window per quirk. |
+| API | `GET /items/v2/categories` → `getItemCategories()` | planned | |
+| Schema | `metrcItemSchema` / `MetrcItem` | **done** | Already in `src/schemas/item.ts`. |
+| Schema | `metrcItemCategorySchema` / `MetrcItemCategory` | planned | |
+
+P1 remaining: `/items/v2/categories` + its schema + conformance entry. Most of the resource is already in place.
 
 ### P2 — Packages resource (full coverage)
 
@@ -64,13 +83,16 @@ Each phase ships as one PR titled `feat: phase N — <resource>`.
 
 ### P3 — Sales resource
 
-| Type | Endpoint or helper | Notes |
-|---|---|---|
-| API | `GET /sales/v2/receipts` → `getSalesReceipts(range?)` | Date-range params. |
-| API | `GET /sales/v2/receipts/{id}` → `getSalesReceiptById(id)` | |
-| API | `GET /sales/v2/transactions` → `getSalesTransactions(range?)` | |
-| API | `GET /sales/v2/customertypes` → `getSalesCustomerTypes()` | |
-| Enhancement | `MetrcDateRange` type + transport normalization to METRC ISO | Used here and any later phase that takes date-range params. |
+| Type | Endpoint or helper | Status | Notes |
+|---|---|---|---|
+| API | `GET /sales/v2/receipts/active` → `getActiveSalesReceipts({lastModifiedStart, lastModifiedEnd})` | **done** | Window required (boundary input-validation guard). |
+| API | `GET /sales/v2/receipts/{id}` → `getSalesReceiptById(id)` | **done** | Single-object GET, uses `validateOne`. List endpoint always returns `Transactions: []`, so this is required for line items. |
+| API | `GET /sales/v2/transactions` → `getSalesTransactions(window)` | planned | Same per-endpoint window pattern as receipts. |
+| API | `GET /sales/v2/customertypes` → `getSalesCustomerTypes()` | planned | |
+
+P3 remaining: `/sales/v2/transactions`, `/sales/v2/customertypes`, plus extending the conformance suite for receipts.
+
+**Note on date-range types:** the prior version of this spec proposed a single `MetrcDateRange` type. The remote agent's `SalesReceiptsWindow` (per-endpoint window type) is now the precedent. We follow it: each endpoint that requires a window declares its own typed window interface (e.g. `SalesTransactionsWindow`), even when the field names are identical, so semantics (required vs optional, allowed range, time-precision) stay attached to the endpoint.
 
 ### P4 — Transfers resource (full coverage)
 
@@ -136,24 +158,35 @@ Any other small lookup endpoints surfaced during P1–P6 that weren't already re
 
 ### Date-range / filtering params
 
-First needed in P3. Shape:
+The remote agent has already established the pattern: a per-endpoint window interface, both fields required as ISO-8601 strings, with a runtime guard at the boundary so JS callers (no TypeScript) can't silently produce empty results.
 
 ```ts
-export interface MetrcDateRange {
-  from?: Date | string; // accepts Date or ISO-ish string
-  to?: Date | string;
+// existing precedent — src/client/interface.ts
+export interface SalesReceiptsWindow {
+  lastModifiedStart: string; // ISO-8601
+  lastModifiedEnd: string;   // ISO-8601
 }
 ```
 
-Transport normalizes to METRC's documented ISO format. Method JSDoc lists which query params they map to (e.g. `lastModifiedStart` / `lastModifiedEnd`). `MetrcDateRange` itself is an **Enhancement** (the API takes plain strings; we accept Dates as a convenience).
+Rules for any future endpoint that takes a LastModified window:
+
+- Declare its own window type (`<Endpoint>Window`) on the interface, even if the field names match an existing one. Keeps semantics per-endpoint.
+- Both `lastModifiedStart` and `lastModifiedEnd` are strings (not `Date | string`) — METRC's contract is strings, and accepting `Date` here would push a normalization concern into transport for an unclear ergonomics gain. Callers do `.toISOString()` themselves.
+- Add the same boundary guard as `getActiveSalesReceipts`: `TypeError` with a method-naming message when either field is missing/empty.
+- For endpoints where the window is only *quirk-required* (the "/active" lists that silently return empty without one), use a wide internal default — `lastModifiedStart=2015-01-01T00:00:00Z`, `lastModifiedEnd=new Date().toISOString()` — and do NOT expose the window in the method signature. Document the quirk in JSDoc. (Precedent: `getActiveLocations`, `getActiveItems`.)
+- For endpoints where the window is semantically meaningful (sales receipts, transactions, lab test results), require the caller to pass it.
+
+This whole machinery is an **Enhancement** in the sense that the per-endpoint window types and the wide-window default are client-side conveniences on top of plain METRC query params.
 
 ### Errors
 
 Existing hierarchy (`MetrcAuthError`/`ClientError`/`RateLimitError`/`ServerError`/`NetworkError`/`ResponseError`) covers read endpoints. No new error types unless a distinct condition surfaces during a phase.
 
-### Pagination
+### Pagination and single-object GETs
 
-`fetchAllPages()` stays as-is. If a future endpoint returns a non-paginated array (METRC has a few of these for tiny lookup lists), add a non-paginated `requestArray()` variant rather than weakening the paginated helper.
+- `fetchAllPages()` stays as-is for paginated list endpoints.
+- For single-object detail endpoints (e.g. `/sales/v2/receipts/{id}`), use `request<unknown>(endpoint, {})` directly and parse with the existing `validateOne()` helper (added in remote commit `8b1220c`). This is now the convention.
+- If a future endpoint returns a non-paginated *array* (some tiny lookup lists), add a `requestArray()` variant rather than weakening `fetchAllPages()`.
 
 ### Schema discovery
 
@@ -241,4 +274,4 @@ These are unknowns that `npm run discover` will answer when the relevant phase s
 
 - Exact URL for package lookup by label, and for units-of-measure (METRC has minor URL drift between docs versions; confirm during P2 and P7 discovery respectively).
 - Whether `/packages/v2/{id}/history` is id-keyed or label-keyed in the current NY docs (confirm during P2 discovery).
-- Final shape of `MetrcDateRange` normalization, in particular timezone handling — current intent is UTC-only ISO, confirmed against live sales discovery in P3.
+- For each *paginated* endpoint not yet audited (`/packages/v2/active`, `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages`): whether it silently returns empty without a LastModified window, the same way `/locations/v2/active` and `/items/v2/active` do. P0 audits this and patches as needed.
