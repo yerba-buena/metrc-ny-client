@@ -24,9 +24,11 @@
 **Create:**
 - `src/coverage.ts` — `CLIENT_COVERAGE` typed map describing per-resource status. Marked as a client-side **Enhancement** (not an API passthrough).
 - `tests/coverage.test.ts` — non-hollow assertions on the contents of `CLIENT_COVERAGE`.
-- `scripts/fixtures/audit-lastmodified-packages-active.json` — discovery output from the audit (with and without window).
-- `scripts/fixtures/audit-lastmodified-transfers-incoming.json` — discovery output.
-- `scripts/fixtures/audit-lastmodified-deliveries-packages.json` — discovery output (uses the first delivery id found).
+- `docs/superpowers/audits/audit-lastmodified-packages-active.json` — counts + verdict from the audit.
+- `docs/superpowers/audits/audit-lastmodified-transfers-incoming.json` — counts + verdict.
+- `docs/superpowers/audits/audit-lastmodified-deliveries-packages.json` — counts + verdict (uses the first delivery id found).
+
+Note: `scripts/fixtures/*.json` is git-ignored to keep raw live-API samples out of the repo (PII risk). Audit outputs live under `docs/superpowers/audits/` instead, and their payload is restricted to counts + verdict — no row data.
 
 **Modify:**
 - `tests/transport.test.ts` — eliminate 6 unhandled-rejection patterns.
@@ -380,9 +382,11 @@ The existing `makeLiveClientFromFixtures` helper only knows about four URL paths
 
 **Files:**
 - Modify: `scripts/discover-schemas.ts`
-- Create: `scripts/fixtures/audit-lastmodified-packages-active.json`
-- Create: `scripts/fixtures/audit-lastmodified-transfers-incoming.json`
-- Create: `scripts/fixtures/audit-lastmodified-deliveries-packages.json`
+- Create: `docs/superpowers/audits/audit-lastmodified-packages-active.json`
+- Create: `docs/superpowers/audits/audit-lastmodified-transfers-incoming.json`
+- Create: `docs/superpowers/audits/audit-lastmodified-deliveries-packages.json`
+
+**Note on file location and PII:** `scripts/fixtures/*.json` is git-ignored to keep raw live-API samples (with real package labels, customer info, license numbers) out of the repo. Audit outputs go under `docs/superpowers/audits/` (a fresh directory, not ignored) and must contain ONLY counts + verdict — no `firstRow`, no row data, no field values from live records.
 
 **Why:** Two existing endpoints (`/locations/v2/active`, `/items/v2/active`) silently return zero rows without a LastModified window. If the same quirk affects `/packages/v2/active`, `/transfers/v2/incoming`, or `/transfers/v2/deliveries/{id}/packages`, downstream consumers are quietly getting empty lists in production. This task uses the existing `npm run discover` machinery to hit each endpoint twice — once without the window and once with a wide window — and capture both responses. The findings determine whether Task 4 is needed.
 
@@ -413,7 +417,12 @@ The existing `makeLiveClientFromFixtures` helper only knows about four URL paths
   // Audit targets for the LastModified-quirk discovery (Phase 0 Task 3).
   // Each pair runs the endpoint twice: bare (no window) vs wide window,
   // so we can see whether the bare response is silently empty.
-  const auditPairs: Array<{ endpoint: string; outputFile: string; idPlaceholder?: (sample: unknown) => string | null }> = [
+  // Payload contains COUNTS ONLY (no row data) to avoid committing PII;
+  // output goes under docs/superpowers/audits/ (not under scripts/fixtures/
+  // which is git-ignored to keep live-data samples out of the repo).
+  const AUDITS_DIR = join(__dirname, "..", "docs", "superpowers", "audits");
+
+  const auditPairs: Array<{ endpoint: string; outputFile: string }> = [
     { endpoint: "/packages/v2/active", outputFile: "audit-lastmodified-packages-active.json" },
     { endpoint: "/transfers/v2/incoming", outputFile: "audit-lastmodified-transfers-incoming.json" },
   ];
@@ -427,8 +436,8 @@ The existing `makeLiveClientFromFixtures` helper only knows about four URL paths
     const payload = {
       endpoint: target.endpoint,
       capturedAt: new Date().toISOString(),
-      bareRequest: { totalRecords: bare.TotalRecords, recordsOnPage: bare.RecordsOnPage, firstRow: bare.Data?.[0] ?? null },
-      windowedRequest: { totalRecords: windowed.TotalRecords, recordsOnPage: windowed.RecordsOnPage, firstRow: windowed.Data?.[0] ?? null },
+      bareRequest: { totalRecords: bare.TotalRecords, recordsOnPage: bare.RecordsOnPage },
+      windowedRequest: { totalRecords: windowed.TotalRecords, recordsOnPage: windowed.RecordsOnPage },
       verdict: bare.TotalRecords === 0 && windowed.TotalRecords > 0
         ? "QUIRKED: bare returns empty; window required"
         : bare.TotalRecords === windowed.TotalRecords
@@ -437,8 +446,8 @@ The existing `makeLiveClientFromFixtures` helper only knows about four URL paths
     };
     const pretty = JSON.stringify(payload, null, 2);
     console.log(pretty);
-    mkdirSync(FIXTURES_DIR, { recursive: true });
-    writeFileSync(join(FIXTURES_DIR, target.outputFile), pretty + "\n");
+    mkdirSync(AUDITS_DIR, { recursive: true });
+    writeFileSync(join(AUDITS_DIR, target.outputFile), pretty + "\n");
   }
 
   async function auditDeliveriesPackages() {
@@ -456,7 +465,8 @@ The existing `makeLiveClientFromFixtures` helper only knows about four URL paths
       };
       const pretty = JSON.stringify(payload, null, 2);
       console.log(pretty);
-      writeFileSync(join(FIXTURES_DIR, "audit-lastmodified-deliveries-packages.json"), pretty + "\n");
+      mkdirSync(AUDITS_DIR, { recursive: true });
+      writeFileSync(join(AUDITS_DIR, "audit-lastmodified-deliveries-packages.json"), pretty + "\n");
       return;
     }
     await discoverPair({
@@ -527,19 +537,20 @@ The existing `makeLiveClientFromFixtures` helper only knows about four URL paths
 
   Read each of the three new audit JSON files and note their `verdict` field. Save the trio of verdicts inline in the commit message of step 4.
 
-- [ ] **Step 4: Commit the audit fixtures and updated script.**
+- [ ] **Step 4: Commit the audit results and updated script.**
 
   ```bash
-  git add scripts/discover-schemas.ts scripts/fixtures/audit-lastmodified-*.json
+  git add scripts/discover-schemas.ts docs/superpowers/audits/audit-lastmodified-*.json
   git commit -m "$(cat <<'EOF'
   chore: audit remaining paginated endpoints for LastModified quirk
 
   Extends discover-schemas.ts to call /packages/v2/active,
   /transfers/v2/incoming, and /transfers/v2/deliveries/{id}/packages
-  twice each — bare vs wide window — and capture both responses to
-  scripts/fixtures/audit-lastmodified-*.json. Records a verdict
+  twice each — bare vs wide window — and capture counts to
+  docs/superpowers/audits/audit-lastmodified-*.json. Records a verdict
   (OK / QUIRKED / INCONCLUSIVE) per endpoint so Task 4 knows which,
-  if any, need the wide-window patch.
+  if any, need the wide-window patch. Audit payload contains counts
+  only (no row data) to avoid committing live-data PII.
 
   Verdicts:
   - /packages/v2/active: <FILL IN FROM AUDIT>
