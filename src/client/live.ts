@@ -103,7 +103,20 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
 
     async getActivePackages(): Promise<MetrcActivePackage[]> {
       const endpoint = "/packages/v2/active";
-      const data = await fetchAllPages<MetrcActivePackage>(paged<MetrcActivePackage>(endpoint), endpoint);
+      // METRC's /packages/v2/active was confirmed by the Phase 0 audit
+      // (docs/superpowers/audits/audit-lastmodified-packages-active.json)
+      // to return a small subset of active packages when called without a
+      // LastModified window (bare 162 vs windowed 1424 records observed).
+      // Same convention as /locations/v2/active and /items/v2/active: pass
+      // a wide window so every active package is returned regardless of
+      // last edit.
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
       return validateArray(metrcActivePackageSchema, data, endpoint);
     },
 
