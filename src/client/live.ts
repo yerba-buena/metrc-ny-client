@@ -66,7 +66,20 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
   return {
     async getIncomingTransfers(): Promise<MetrcTransfer[]> {
       const endpoint = "/transfers/v2/incoming";
-      const data = await fetchAllPages<MetrcTransfer>(paged<MetrcTransfer>(endpoint), endpoint);
+      // METRC's /transfers/v2/incoming was confirmed by the Phase 0 audit
+      // (docs/superpowers/audits/audit-lastmodified-transfers-incoming.json)
+      // to return a near-empty subset of incoming transfers when called without a
+      // LastModified window (bare 1 vs windowed 365 records observed).
+      // Same convention as /locations/v2/active and /items/v2/active: pass
+      // a wide window so every incoming transfer is returned regardless of
+      // last edit.
+      const data = await fetchAllPages<MetrcTransfer>(
+        paged<MetrcTransfer>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
       return validateArray(metrcTransferSchema, data, endpoint);
     },
 
