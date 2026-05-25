@@ -27,3 +27,10 @@ export {
   MetrcError, MetrcAuthError, MetrcClientError, MetrcRateLimitError,
   MetrcServerError, MetrcNetworkError, MetrcResponseError,
 } from "./errors.js";
+
+export {
+  CLIENT_COVERAGE,
+} from "./coverage.js";
+export type {
+  CoverageStatus, ResourceCoverage, EndpointCoverage, HelperCoverage,
+} from "./coverage.js";
