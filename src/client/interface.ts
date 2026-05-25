@@ -26,13 +26,46 @@ export interface SalesReceiptsWindow {
   lastModifiedEnd: string;
 }
 
+/**
+ * Read-only client for the METRC NY v2 API.
+ *
+ * Each method's JSDoc starts with one of two markers so callers always
+ * know what they are calling:
+ *
+ *   - `API: GET /...` — a 1:1 passthrough of a single METRC endpoint.
+ *   - `Enhancement: composed from ...` — a client-side helper built on
+ *     top of one or more API methods. Behavior is decided by this
+ *     client, not by METRC.
+ *
+ * Endpoints flagged with `(LastModified-quirk)` use a wide internal
+ * date window because METRC silently returns empty (or partial) lists
+ * otherwise.
+ */
 export interface MetrcClient {
+  /** API: GET /transfers/v2/incoming (LastModified-quirk) */
   getIncomingTransfers(): Promise<MetrcTransfer[]>;
+
+  /** API: GET /transfers/v2/deliveries/{deliveryId}/packages */
   getPackagesForDelivery(deliveryId: number): Promise<MetrcPackage[]>;
+
+  /**
+   * Enhancement: composed from getIncomingTransfers + getPackagesForDelivery,
+   * one delivery at a time (sequential).
+   */
   getDeliveriesWithPackages(): Promise<DeliveryWithPackages[]>;
+
+  /** API: GET /locations/v2/active (LastModified-quirk) */
   getActiveLocations(): Promise<MetrcLocation[]>;
+
+  /** API: GET /packages/v2/active (LastModified-quirk) */
   getActivePackages(): Promise<MetrcActivePackage[]>;
+
+  /** API: GET /items/v2/active (LastModified-quirk) */
   getActiveItems(): Promise<MetrcItem[]>;
+
+  /** API: GET /sales/v2/receipts/active */
   getActiveSalesReceipts(window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]>;
+
+  /** API: GET /sales/v2/receipts/{id} */
   getSalesReceiptById(id: number): Promise<MetrcSalesReceiptDetail>;
 }

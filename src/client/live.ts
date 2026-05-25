@@ -64,15 +64,19 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
   }
 
   return {
+    /**
+     * API: GET /transfers/v2/incoming (LastModified-quirk)
+     *
+     * METRC's /transfers/v2/incoming was confirmed by the Phase 0 audit
+     * (docs/superpowers/audits/audit-lastmodified-transfers-incoming.json)
+     * to return a near-empty subset of incoming transfers when called without a
+     * LastModified window (bare 1 vs windowed 365 records observed).
+     * Same convention as /locations/v2/active and /items/v2/active: pass
+     * a wide window so every incoming transfer is returned regardless of
+     * last edit.
+     */
     async getIncomingTransfers(): Promise<MetrcTransfer[]> {
       const endpoint = "/transfers/v2/incoming";
-      // METRC's /transfers/v2/incoming was confirmed by the Phase 0 audit
-      // (docs/superpowers/audits/audit-lastmodified-transfers-incoming.json)
-      // to return a near-empty subset of incoming transfers when called without a
-      // LastModified window (bare 1 vs windowed 365 records observed).
-      // Same convention as /locations/v2/active and /items/v2/active: pass
-      // a wide window so every incoming transfer is returned regardless of
-      // last edit.
       const data = await fetchAllPages<MetrcTransfer>(
         paged<MetrcTransfer>(endpoint, {
           lastModifiedStart: "2015-01-01T00:00:00Z",
@@ -83,12 +87,17 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return validateArray(metrcTransferSchema, data, endpoint);
     },
 
+    /** API: GET /transfers/v2/deliveries/{deliveryId}/packages */
     async getPackagesForDelivery(deliveryId: number): Promise<MetrcPackage[]> {
       const endpoint = `/transfers/v2/deliveries/${deliveryId}/packages`;
       const data = await fetchAllPages<MetrcPackage>(paged<MetrcPackage>(endpoint), endpoint);
       return validateArray(metrcPackageSchema, data, endpoint);
     },
 
+    /**
+     * Enhancement: composed from getIncomingTransfers + getPackagesForDelivery,
+     * one delivery at a time (sequential).
+     */
     async getDeliveriesWithPackages(): Promise<DeliveryWithPackages[]> {
       const transfers = await this.getIncomingTransfers();
       const result: DeliveryWithPackages[] = [];
@@ -99,11 +108,15 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return result;
     },
 
+    /**
+     * API: GET /locations/v2/active (LastModified-quirk)
+     *
+     * METRC's /locations/v2/active returns an empty list (HTTP 200, no error)
+     * unless BOTH lastModifiedStart and lastModifiedEnd are supplied. Use a
+     * wide window so every active location is returned regardless of last edit.
+     */
     async getActiveLocations(): Promise<MetrcLocation[]> {
       const endpoint = "/locations/v2/active";
-      // METRC's /locations/v2/active returns an empty list (HTTP 200, no error)
-      // unless BOTH lastModifiedStart and lastModifiedEnd are supplied. Use a
-      // wide window so every active location is returned regardless of last edit.
       const data = await fetchAllPages<MetrcLocation>(
         paged<MetrcLocation>(endpoint, {
           lastModifiedStart: "2015-01-01T00:00:00Z",
@@ -114,15 +127,19 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return validateArray(metrcLocationSchema, data, endpoint);
     },
 
+    /**
+     * API: GET /packages/v2/active (LastModified-quirk)
+     *
+     * METRC's /packages/v2/active was confirmed by the Phase 0 audit
+     * (docs/superpowers/audits/audit-lastmodified-packages-active.json)
+     * to return a small subset of active packages when called without a
+     * LastModified window (bare 162 vs windowed 1424 records observed).
+     * Same convention as /locations/v2/active and /items/v2/active: pass
+     * a wide window so every active package is returned regardless of
+     * last edit.
+     */
     async getActivePackages(): Promise<MetrcActivePackage[]> {
       const endpoint = "/packages/v2/active";
-      // METRC's /packages/v2/active was confirmed by the Phase 0 audit
-      // (docs/superpowers/audits/audit-lastmodified-packages-active.json)
-      // to return a small subset of active packages when called without a
-      // LastModified window (bare 162 vs windowed 1424 records observed).
-      // Same convention as /locations/v2/active and /items/v2/active: pass
-      // a wide window so every active package is returned regardless of
-      // last edit.
       const data = await fetchAllPages<MetrcActivePackage>(
         paged<MetrcActivePackage>(endpoint, {
           lastModifiedStart: "2015-01-01T00:00:00Z",
@@ -133,10 +150,14 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return validateArray(metrcActivePackageSchema, data, endpoint);
     },
 
+    /**
+     * API: GET /items/v2/active (LastModified-quirk)
+     *
+     * Same convention as /locations/v2/active: pass a wide LastModified window
+     * so every active item is returned regardless of when it was last edited.
+     */
     async getActiveItems(): Promise<MetrcItem[]> {
       const endpoint = "/items/v2/active";
-      // Same convention as /locations/v2/active: pass a wide LastModified window
-      // so every active item is returned regardless of when it was last edited.
       const data = await fetchAllPages<MetrcItem>(
         paged<MetrcItem>(endpoint, {
           lastModifiedStart: "2015-01-01T00:00:00Z",
@@ -147,6 +168,7 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return validateArray(metrcItemSchema, data, endpoint);
     },
 
+    /** API: GET /sales/v2/receipts/active */
     async getActiveSalesReceipts(window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]> {
       const endpoint = "/sales/v2/receipts/active";
       // METRC's /sales/v2/receipts/active returns 0 rows when called without
@@ -173,6 +195,7 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return validateArray(metrcSalesReceiptSchema, data, endpoint);
     },
 
+    /** API: GET /sales/v2/receipts/{id} */
     async getSalesReceiptById(id: number): Promise<MetrcSalesReceiptDetail> {
       const endpoint = `/sales/v2/receipts/${id}`;
       // Single-object GET, not paginated.
