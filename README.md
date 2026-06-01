@@ -8,7 +8,7 @@ TypeScript client for the METRC NY v2 API. Started as a dispensary-focused subse
 
 ## Coverage
 
-Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The table below is kept in lockstep.
+Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The resource rows of the table below mirror it; the final `writes` row is an editorial note about a category deferred wholesale rather than per-endpoint.
 
 | Resource | Endpoints implemented | Status | Notes |
 |---|---|---|---|
