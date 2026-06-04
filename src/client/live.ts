@@ -4,11 +4,13 @@ import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.j
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+  metrcItemCategorySchema,
 } from "../schemas/index.js";
 import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+  MetrcItemCategory,
 } from "../schemas/index.js";
 import { MetrcResponseError } from "../errors.js";
 import { NOOP_LOGGER } from "../logger.js";
@@ -166,6 +168,13 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
         endpoint,
       );
       return validateArray(metrcItemSchema, data, endpoint);
+    },
+
+    /** API: GET /items/v2/categories */
+    async getItemCategories(): Promise<MetrcItemCategory[]> {
+      const endpoint = "/items/v2/categories";
+      const data = await fetchAllPages<MetrcItemCategory>(paged<MetrcItemCategory>(endpoint), endpoint);
+      return validateArray(metrcItemCategorySchema, data, endpoint);
     },
 
     /** API: GET /sales/v2/receipts/active */
