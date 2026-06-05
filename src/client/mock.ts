@@ -3,6 +3,7 @@ import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+  MetrcItemCategory,
 } from "../schemas/index.js";
 
 export interface MockFixtures {
@@ -13,6 +14,7 @@ export interface MockFixtures {
   items: MetrcItem[];
   salesReceipts: MetrcSalesReceipt[];
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
+  itemCategories: MetrcItemCategory[];
 }
 
 const DEFAULT_TRANSFER: MetrcTransfer = {
@@ -281,6 +283,32 @@ const DEFAULT_ITEM_CATALOG_B: MetrcItem = {
   IsUsed: true,
 };
 
+const DEFAULT_ITEM_CATEGORY_FLOWER: MetrcItemCategory = {
+  Name: "Bud/Flower - Each",
+  ProductCategoryType: "Buds",
+  QuantityType: "WeightBased",
+  CanBeDecontaminated: false,
+  CanBeDestroyed: true,
+  CanBePreTreated: false,
+  CanBeRemediated: false,
+  CanContainSeeds: false,
+  RequiresStrain: true,
+  RequiresItemBrand: false,
+};
+
+const DEFAULT_ITEM_CATEGORY_PREROLL: MetrcItemCategory = {
+  Name: "Raw Pre-Roll - Each",
+  ProductCategoryType: "Buds",
+  QuantityType: "CountBased",
+  CanBeDecontaminated: false,
+  CanBeDestroyed: true,
+  CanBePreTreated: false,
+  CanBeRemediated: false,
+  CanContainSeeds: false,
+  RequiresStrain: true,
+  RequiresItemBrand: false,
+};
+
 const DEFAULT_SALES_TRANSACTION = {
   PackageId: 5001,
   PackageLabel: "1A4FF0300000001000000101",
@@ -330,6 +358,7 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
   salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
+  itemCategories: [DEFAULT_ITEM_CATEGORY_FLOWER, DEFAULT_ITEM_CATEGORY_PREROLL],
 };
 
 export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXTURES): MetrcClient {
@@ -354,6 +383,9 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getActiveItems(): Promise<MetrcItem[]> {
       return [...fixtures.items];
+    },
+    async getItemCategories(): Promise<MetrcItemCategory[]> {
+      return [...fixtures.itemCategories];
     },
     async getActiveSalesReceipts(_window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]> {
       void _window;
