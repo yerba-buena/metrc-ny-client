@@ -33,14 +33,19 @@ describe("CLIENT_COVERAGE", () => {
     );
   });
 
-  it("declares /items/v2/active as complete and /items/v2/categories as planned", () => {
+  it("declares both items endpoints as complete and tied to their client methods", () => {
     const items = CLIENT_COVERAGE.find((r) => r.resource === "items")!;
     const active = items.endpoints.find((e) => e.path === "/items/v2/active");
     const categories = items.endpoints.find((e) => e.path === "/items/v2/categories");
     expect(active?.status).toBe("complete");
     expect(active?.clientMethod).toBe("getActiveItems");
-    expect(categories?.status).toBe("planned");
-    expect(categories?.clientMethod).toBeNull();
+    expect(categories?.status).toBe("complete");
+    expect(categories?.clientMethod).toBe("getItemCategories");
+  });
+
+  it("marks items resource as complete (every documented /items/v2/* endpoint is covered)", () => {
+    const items = CLIENT_COVERAGE.find((r) => r.resource === "items")!;
+    expect(items.status).toBe("complete");
   });
 
   it("declares sales receipts list+detail complete, /sales/v2/transactions and /sales/v2/customertypes planned", () => {
