@@ -3,8 +3,14 @@ import { createLiveMetrcClient } from "../src/client/live.js";
 import { createMockMetrcClient, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import { NOOP_LOGGER } from "../src/logger.js";
 import type { MetrcClient } from "../src/client/interface.js";
-import type { MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage } from "../src/schemas/index.js";
-import { metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema } from "../src/schemas/index.js";
+import type {
+  MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage,
+  MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+} from "../src/schemas/index.js";
+import {
+  metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+} from "../src/schemas/index.js";
 
 const okEnvelope = (data: unknown[]) => ({
   ok: true, status: 200, headers: new Headers(),
@@ -20,11 +26,27 @@ function makeLiveClientFromFixtures(
   packagesByDeliveryId: Record<number, MetrcPackage[]>,
   locations: MetrcLocation[],
   activePackages: MetrcActivePackage[],
+  items: MetrcItem[],
+  salesReceipts: MetrcSalesReceipt[],
+  salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
 ): MetrcClient {
   const fetch = vi.fn(async (url: string) => {
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
     if (url.includes("/locations/v2/active")) return okEnvelope(locations) as unknown as Response;
     if (url.includes("/packages/v2/active")) return okEnvelope(activePackages) as unknown as Response;
+    if (url.includes("/items/v2/active")) return okEnvelope(items) as unknown as Response;
+    if (url.includes("/sales/v2/receipts/active")) return okEnvelope(salesReceipts) as unknown as Response;
+    const receiptDetailMatch = url.match(/\/sales\/v2\/receipts\/(\d+)(?:\?|$)/);
+    if (receiptDetailMatch) {
+      const id = parseInt(receiptDetailMatch[1]!, 10);
+      const detail = salesReceiptDetailsById[id];
+      if (!detail) throw new Error(`fixture: no sales receipt detail for id ${id}`);
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => detail,
+        text: async () => "",
+      } as unknown as Response;
+    }
     const m = url.match(/\/deliveries\/(\d+)\/packages/);
     if (m) {
       const id = parseInt(m[1]!, 10);
@@ -43,7 +65,15 @@ function makeLiveClientFromFixtures(
 const fixtures = DEFAULT_MOCK_FIXTURES;
 const variants: Array<[string, () => MetrcClient]> = [
   ["mock", () => createMockMetrcClient(fixtures)],
-  ["live (with stubbed fetch)", () => makeLiveClientFromFixtures(fixtures.transfers, fixtures.packagesByDeliveryId, fixtures.locations, fixtures.activePackages)],
+  ["live (with stubbed fetch)", () => makeLiveClientFromFixtures(
+    fixtures.transfers,
+    fixtures.packagesByDeliveryId,
+    fixtures.locations,
+    fixtures.activePackages,
+    fixtures.items,
+    fixtures.salesReceipts,
+    fixtures.salesReceiptDetailsById,
+  )],
 ];
 
 describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) => {
@@ -86,5 +116,32 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const result = await client.getActivePackages();
     expect(result.length).toBe(fixtures.activePackages.length);
     for (const p of result) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getActiveItems returns items that parse as MetrcItem", async () => {
+    const client = makeClient();
+    const result = await client.getActiveItems();
+    expect(result.length).toBe(fixtures.items.length);
+    for (const item of result) expect(() => metrcItemSchema.parse(item)).not.toThrow();
+  });
+
+  it("getActiveSalesReceipts returns receipts that parse as MetrcSalesReceipt", async () => {
+    const client = makeClient();
+    const result = await client.getActiveSalesReceipts({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T23:59:59Z",
+    });
+    expect(result.length).toBe(fixtures.salesReceipts.length);
+    for (const r of result) expect(() => metrcSalesReceiptSchema.parse(r)).not.toThrow();
+  });
+
+  it("getSalesReceiptById returns a detail that parses as MetrcSalesReceiptDetail", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.salesReceiptDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const detail = await client.getSalesReceiptById(knownId);
+    expect(() => metrcSalesReceiptDetailSchema.parse(detail)).not.toThrow();
+    expect(detail.Id).toBe(knownId);
+    expect(detail.Transactions.length).toBeGreaterThan(0);
   });
 });

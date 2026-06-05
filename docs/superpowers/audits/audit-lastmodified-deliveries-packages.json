@@ -1,0 +1,13 @@
+{
+  "endpoint": "/transfers/v2/deliveries/240709/packages",
+  "capturedAt": "2026-05-25T21:56:00.293Z",
+  "bareRequest": {
+    "totalRecords": 4,
+    "recordsOnPage": 4
+  },
+  "windowedRequest": {
+    "totalRecords": 4,
+    "recordsOnPage": 4
+  },
+  "verdict": "OK: bare and windowed match"
+}

@@ -76,9 +76,9 @@ describe("transport request", () => {
   it("throws MetrcAuthError on 401", async () => {
     const fetch = vi.fn(async () => mockResponse({ ok: false, status: 401, body: "Unauthorized" }));
     const req = createRequester({ ...baseConfig, fetch });
-    const promise = req("/x/v2/y", {});
+    const settled = req("/x/v2/y", {}).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(0);
-    await expect(promise).rejects.toBeInstanceOf(MetrcAuthError);
+    expect(await settled).toBeInstanceOf(MetrcAuthError);
   });
 
   it("throws MetrcAuthError on 403", async () => {
@@ -120,10 +120,9 @@ describe("transport request", () => {
   it("throws MetrcRateLimitError after max retries on 429", async () => {
     const fetch = vi.fn(async () => mockResponse({ ok: false, status: 429, headers: { "Retry-After": "1" }, body: "rate limited" }));
     const req = createRequester({ ...baseConfig, fetch });
-    const p = req("/x/v2/y", {});
+    const settled = req("/x/v2/y", {}).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(20000);
-    let caught: unknown;
-    await p.catch((e) => { caught = e; });
+    const caught = await settled;
     expect(caught).toBeInstanceOf(MetrcRateLimitError);
     expect((caught as MetrcRateLimitError).retryAfterSeconds).toBe(1);
     expect(fetch.mock.calls.length).toBe(3); // 1 initial + 2 retries
@@ -146,17 +145,17 @@ describe("transport request", () => {
   it("throws MetrcServerError after max retries on 500", async () => {
     const fetch = vi.fn(async () => mockResponse({ ok: false, status: 503, body: "down" }));
     const req = createRequester({ ...baseConfig, fetch });
-    const p = req("/x/v2/y", {});
+    const settled = req("/x/v2/y", {}).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(20000);
-    await expect(p).rejects.toBeInstanceOf(MetrcServerError);
+    expect(await settled).toBeInstanceOf(MetrcServerError);
   });
 
   it("throws MetrcNetworkError after max retries on fetch rejection", async () => {
     const fetch = vi.fn(async () => { throw new TypeError("ECONNRESET"); });
     const req = createRequester({ ...baseConfig, fetch });
-    const p = req("/x/v2/y", {});
+    const settled = req("/x/v2/y", {}).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(20000);
-    await expect(p).rejects.toBeInstanceOf(MetrcNetworkError);
+    expect(await settled).toBeInstanceOf(MetrcNetworkError);
   });
 
   it("retries on 429 without Retry-After header using backoff delay", async () => {
@@ -177,10 +176,9 @@ describe("transport request", () => {
   it("throws MetrcRateLimitError with undefined retryAfterSeconds when no header on final 429", async () => {
     const fetch = vi.fn(async () => mockResponse({ ok: false, status: 429, body: "rate limited" }));
     const req = createRequester({ ...baseConfig, fetch });
-    const p = req("/x/v2/y", {});
+    const settled = req("/x/v2/y", {}).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(20000);
-    let caught: unknown;
-    await p.catch((e) => { caught = e; });
+    const caught = await settled;
     expect(caught).toBeInstanceOf(MetrcRateLimitError);
     expect((caught as MetrcRateLimitError).retryAfterSeconds).toBeUndefined();
   });
@@ -188,10 +186,9 @@ describe("transport request", () => {
   it("wraps a non-Error fetch rejection into MetrcNetworkError using String(err)", async () => {
     const fetch = vi.fn(async () => { throw "string-rejection"; });
     const req = createRequester({ ...baseConfig, fetch });
-    const p = req("/x/v2/y", {});
+    const settled = req("/x/v2/y", {}).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(20000);
-    let caught: unknown;
-    await p.catch((e) => { caught = e; });
+    const caught = await settled;
     expect(caught).toBeInstanceOf(MetrcNetworkError);
     expect((caught as MetrcNetworkError).message).toBe("string-rejection");
   });
@@ -200,9 +197,7 @@ describe("transport request", () => {
     const stub = vi.fn(async () => mockResponse({ body: { Data: [], TotalPages: 1, CurrentPage: 1, RecordsOnPage: 0, Page: 1, PageSize: 20, Total: 0, TotalRecords: 0 } }));
     vi.stubGlobal("fetch", stub);
     try {
-      const { fetch: _omit, ...cfgWithoutFetch } = baseConfig;
-      void _omit;
-      const req = createRequester(cfgWithoutFetch);
+      const req = createRequester(baseConfig);
       await req("/x/v2/y", {});
       expect(stub).toHaveBeenCalledTimes(1);
     } finally {

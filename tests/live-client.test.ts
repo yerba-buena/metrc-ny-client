@@ -71,6 +71,8 @@ describe("createLiveMetrcClient", () => {
     const client = createLiveMetrcClient({ ...baseConfig, fetch });
     const result = await client.getIncomingTransfers();
     expect(capturedUrl).toContain("/transfers/v2/incoming");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
     expect(result.length).toBe(2);
     expect(result[0]!.Id).toBe(1);
   });
@@ -252,6 +254,8 @@ describe("createLiveMetrcClient", () => {
     const client = createLiveMetrcClient({ ...baseConfig, fetch });
     const result = await client.getActivePackages();
     expect(capturedUrl).toContain("/packages/v2/active");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
     expect(result.length).toBe(1);
     expect(result[0]!.Id).toBe(5001);
   });
