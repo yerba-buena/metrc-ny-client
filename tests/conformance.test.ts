@@ -4,11 +4,12 @@ import { createMockMetrcClient, DEFAULT_MOCK_FIXTURES } from "../src/client/mock
 import { NOOP_LOGGER } from "../src/logger.js";
 import type { MetrcClient } from "../src/client/interface.js";
 import type {
-  MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage,
+  MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
 } from "../src/schemas/index.js";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
 } from "../src/schemas/index.js";
 
@@ -21,6 +22,15 @@ const okEnvelope = (data: unknown[]) => ({
   text: async () => "",
 });
 
+const bareArray = (data: unknown[]) =>
+  ({
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: async () => data,
+    text: async () => "",
+  }) as unknown as Response;
+
 function makeLiveClientFromFixtures(
   transfers: MetrcTransfer[],
   packagesByDeliveryId: Record<number, MetrcPackage[]>,
@@ -28,11 +38,15 @@ function makeLiveClientFromFixtures(
   activePackages: MetrcActivePackage[],
   inactivePackages: MetrcActivePackage[],
   onHoldPackages: MetrcActivePackage[],
+  packageTypes: string[],
+  packageAdjustReasons: MetrcPackageAdjustReason[],
   items: MetrcItem[],
   salesReceipts: MetrcSalesReceipt[],
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
 ): MetrcClient {
   const fetch = vi.fn(async (url: string) => {
+    if (url.includes("/packages/v2/types")) return bareArray(packageTypes) as unknown as Response;
+    if (url.includes("/packages/v2/adjust/reasons")) return okEnvelope(packageAdjustReasons) as unknown as Response;
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
     if (url.includes("/locations/v2/active")) return okEnvelope(locations) as unknown as Response;
     if (url.includes("/packages/v2/inactive")) return okEnvelope(inactivePackages) as unknown as Response;
@@ -76,6 +90,8 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.activePackages,
     fixtures.inactivePackages,
     fixtures.onHoldPackages,
+    fixtures.packageTypes,
+    fixtures.packageAdjustReasons,
     fixtures.items,
     fixtures.salesReceipts,
     fixtures.salesReceiptDetailsById,
@@ -163,5 +179,19 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const result = await client.getOnHoldPackages();
     expect(result.length).toBe(fixtures.onHoldPackages.length);
     for (const p of result) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getPackageTypes returns a bare array of strings", async () => {
+    const client = makeClient();
+    const result = await client.getPackageTypes();
+    expect(result.length).toBe(fixtures.packageTypes.length);
+    for (const t of result) expect(typeof t).toBe("string");
+  });
+
+  it("getPackageAdjustReasons returns reasons that parse as MetrcPackageAdjustReason", async () => {
+    const client = makeClient();
+    const result = await client.getPackageAdjustReasons();
+    expect(result.length).toBe(fixtures.packageAdjustReasons.length);
+    for (const r of result) expect(() => metrcPackageAdjustReasonSchema.parse(r)).not.toThrow();
   });
 });

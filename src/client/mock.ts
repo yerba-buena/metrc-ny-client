@@ -1,7 +1,7 @@
 import type { MetrcClient, SalesReceiptsWindow } from "./interface.js";
 import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
 } from "../schemas/index.js";
 
@@ -12,6 +12,8 @@ export interface MockFixtures {
   activePackages: MetrcActivePackage[];
   inactivePackages: MetrcActivePackage[];
   onHoldPackages: MetrcActivePackage[];
+  packageTypes: string[];
+  packageAdjustReasons: MetrcPackageAdjustReason[];
   items: MetrcItem[];
   salesReceipts: MetrcSalesReceipt[];
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
@@ -271,6 +273,25 @@ const DEFAULT_ON_HOLD_PACKAGE: MetrcActivePackage = {
   IsOnHoldCombined: true,
 };
 
+const DEFAULT_PACKAGE_TYPES: string[] = ["Product", "ImmaturePlant", "VegetativePlant"];
+
+const DEFAULT_PACKAGE_ADJUST_REASONS: MetrcPackageAdjustReason[] = [
+  {
+    Name: "Mandatory State Destruction",
+    RequiresNote: true,
+    RequiresWasteWeight: true,
+    RequiresImmatureWasteWeight: false,
+    RequiresMatureWasteWeight: false,
+  },
+  {
+    Name: "Spoilage",
+    RequiresNote: false,
+    RequiresWasteWeight: false,
+    RequiresImmatureWasteWeight: false,
+    RequiresMatureWasteWeight: false,
+  },
+];
+
 const DEFAULT_ITEM_CATALOG_A: MetrcItem = {
   Id: 1,
   Name: "Mock Flower 3.5g",
@@ -351,6 +372,8 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   activePackages: [DEFAULT_ACTIVE_PACKAGE_A, DEFAULT_ACTIVE_PACKAGE_B],
   inactivePackages: [DEFAULT_INACTIVE_PACKAGE],
   onHoldPackages: [DEFAULT_ON_HOLD_PACKAGE],
+  packageTypes: DEFAULT_PACKAGE_TYPES,
+  packageAdjustReasons: DEFAULT_PACKAGE_ADJUST_REASONS,
   items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
   salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
@@ -381,6 +404,12 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getOnHoldPackages(): Promise<MetrcActivePackage[]> {
       return [...fixtures.onHoldPackages];
+    },
+    async getPackageTypes(): Promise<string[]> {
+      return [...fixtures.packageTypes];
+    },
+    async getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]> {
+      return [...fixtures.packageAdjustReasons];
     },
     async getActiveItems(): Promise<MetrcItem[]> {
       return [...fixtures.items];

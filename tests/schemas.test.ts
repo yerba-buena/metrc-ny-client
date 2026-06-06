@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
-  metrcLocationSchema, metrcActivePackageSchema,
+  metrcLocationSchema, metrcActivePackageSchema, metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema,
 } from "../src/schemas/index.js";
@@ -322,5 +322,28 @@ describe("metrcSalesReceiptDetailSchema", () => {
   it("rejects when Transactions contains an invalid line item", () => {
     const bad = { ...sampleReceiptDetail, Transactions: [{ ...sampleTransaction, QuantitySold: "two" }] };
     expect(() => metrcSalesReceiptDetailSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleAdjustReason = {
+  Name: "Spoilage",
+  RequiresNote: false,
+  RequiresWasteWeight: false,
+  RequiresImmatureWasteWeight: false,
+  RequiresMatureWasteWeight: false,
+};
+
+describe("metrcPackageAdjustReasonSchema", () => {
+  it("parses a well-formed adjust reason", () => {
+    expect(() => metrcPackageAdjustReasonSchema.parse(sampleAdjustReason)).not.toThrow();
+  });
+  it("rejects an adjust reason missing Name", () => {
+    const bad: Record<string, unknown> = { ...sampleAdjustReason };
+    delete bad.Name;
+    expect(() => metrcPackageAdjustReasonSchema.parse(bad)).toThrow();
+  });
+  it("rejects an adjust reason with wrong type on RequiresNote", () => {
+    const bad = { ...sampleAdjustReason, RequiresNote: "not-a-bool" };
+    expect(() => metrcPackageAdjustReasonSchema.parse(bad)).toThrow();
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createMockMetrcClient, type MockFixtures, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
 } from "../src/schemas/index.js";
 
@@ -43,6 +44,8 @@ describe("createMockMetrcClient", () => {
       activePackages: [],
       inactivePackages: [],
       onHoldPackages: [],
+      packageTypes: [],
+      packageAdjustReasons: [],
       items: [],
       salesReceipts: [],
       salesReceiptDetailsById: {},
@@ -54,6 +57,8 @@ describe("createMockMetrcClient", () => {
     expect(await client.getActivePackages()).toEqual([]);
     expect(await client.getInactivePackages()).toEqual([]);
     expect(await client.getOnHoldPackages()).toEqual([]);
+    expect(await client.getPackageTypes()).toEqual([]);
+    expect(await client.getPackageAdjustReasons()).toEqual([]);
     expect(await client.getActiveItems()).toEqual([]);
     expect(await client.getActiveSalesReceipts({
       lastModifiedStart: "2026-01-01T00:00:00Z",
@@ -185,6 +190,36 @@ describe("createMockMetrcClient", () => {
     const client = createMockMetrcClient();
     const a = await client.getOnHoldPackages();
     const b = await client.getOnHoldPackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default package types round-trip", async () => {
+    const client = createMockMetrcClient();
+    const types = await client.getPackageTypes();
+    expect(types.length).toBeGreaterThan(0);
+    for (const t of types) expect(typeof t).toBe("string");
+  });
+
+  it("getPackageTypes returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getPackageTypes();
+    const b = await client.getPackageTypes();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default package adjust reasons parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const reasons = await client.getPackageAdjustReasons();
+    expect(reasons.length).toBeGreaterThan(0);
+    for (const r of reasons) expect(() => metrcPackageAdjustReasonSchema.parse(r)).not.toThrow();
+  });
+
+  it("getPackageAdjustReasons returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getPackageAdjustReasons();
+    const b = await client.getPackageAdjustReasons();
     expect(a).toEqual(b);
     expect(a).not.toBe(b);
   });

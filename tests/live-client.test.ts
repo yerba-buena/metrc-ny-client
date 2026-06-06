@@ -473,4 +473,51 @@ describe("createLiveMetrcClient", () => {
       spy.mockRestore();
     }
   });
+
+  const bareArray = (data: unknown[]) =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => data,
+      text: async () => "",
+    }) as unknown as Response;
+
+  it("getPackageTypes calls /packages/v2/types and returns the bare string array", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return bareArray(["Product", "ImmaturePlant"]);
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageTypes();
+    expect(capturedUrl).toContain("/packages/v2/types");
+    expect(result).toEqual(["Product", "ImmaturePlant"]);
+  });
+
+  it("getPackageAdjustReasons calls /packages/v2/adjust/reasons and returns Data", async () => {
+    let capturedUrl = "";
+    const fakeReason = {
+      Name: "Spoilage",
+      RequiresNote: false,
+      RequiresWasteWeight: false,
+      RequiresImmatureWasteWeight: false,
+      RequiresMatureWasteWeight: false,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeReason]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageAdjustReasons();
+    expect(capturedUrl).toContain("/packages/v2/adjust/reasons");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Spoilage");
+  });
+
+  it("validateResponses=true rejects malformed adjust reasons via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a reason" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageAdjustReasons()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
 });

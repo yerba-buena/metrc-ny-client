@@ -1,7 +1,7 @@
 // src/client/interface.ts
 import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
 } from "../schemas/index.js";
 import type { Logger } from "../logger.js";
@@ -65,6 +65,12 @@ export interface MetrcClient {
 
   /** API: GET /packages/v2/onhold (LastModified-quirk) */
   getOnHoldPackages(): Promise<MetrcActivePackage[]>;
+
+  /** API: GET /packages/v2/types */
+  getPackageTypes(): Promise<string[]>;
+
+  /** API: GET /packages/v2/adjust/reasons */
+  getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]>;
 
   /** API: GET /items/v2/active (LastModified-quirk) */
   getActiveItems(): Promise<MetrcItem[]>;

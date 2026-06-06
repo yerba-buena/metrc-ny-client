@@ -1,13 +1,15 @@
 import type { MetrcClient, MetrcConfig, SalesReceiptsWindow } from "./interface.js";
 import { createRequester } from "../transport/request.js";
+import { requestArray } from "../transport/request-array.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
 } from "../schemas/index.js";
 import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
 } from "../schemas/index.js";
 import { MetrcResponseError } from "../errors.js";
@@ -195,6 +197,22 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
         endpoint,
       );
       return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /** API: GET /packages/v2/types */
+    async getPackageTypes(): Promise<string[]> {
+      const endpoint = "/packages/v2/types";
+      return requestArray<string>(request, endpoint);
+    },
+
+    /** API: GET /packages/v2/adjust/reasons */
+    async getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]> {
+      const endpoint = "/packages/v2/adjust/reasons";
+      const data = await fetchAllPages<MetrcPackageAdjustReason>(
+        paged<MetrcPackageAdjustReason>(endpoint),
+        endpoint,
+      );
+      return validateArray(metrcPackageAdjustReasonSchema, data, endpoint);
     },
 
     /**
