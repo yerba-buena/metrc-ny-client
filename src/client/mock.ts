@@ -10,6 +10,8 @@ export interface MockFixtures {
   packagesByDeliveryId: Record<number, MetrcPackage[]>;
   locations: MetrcLocation[];
   activePackages: MetrcActivePackage[];
+  inactivePackages: MetrcActivePackage[];
+  onHoldPackages: MetrcActivePackage[];
   items: MetrcItem[];
   salesReceipts: MetrcSalesReceipt[];
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
@@ -249,6 +251,26 @@ const DEFAULT_ACTIVE_PACKAGE_B: MetrcActivePackage = {
   },
 };
 
+const DEFAULT_INACTIVE_PACKAGE: MetrcActivePackage = {
+  ...DEFAULT_ACTIVE_PACKAGE_A,
+  Id: 6001,
+  Label: "1A4FF0300000001000000201",
+  LocationName: "Vault",
+  IsFinished: true,
+  FinishedDate: "2026-03-15",
+  Quantity: 0,
+  ArchivedDate: "2026-03-16",
+};
+
+const DEFAULT_ON_HOLD_PACKAGE: MetrcActivePackage = {
+  ...DEFAULT_ACTIVE_PACKAGE_A,
+  Id: 6002,
+  Label: "1A4FF0300000001000000202",
+  LocationName: "Fulfillment",
+  IsOnHold: true,
+  IsOnHoldCombined: true,
+};
+
 const DEFAULT_ITEM_CATALOG_A: MetrcItem = {
   Id: 1,
   Name: "Mock Flower 3.5g",
@@ -327,6 +349,8 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   packagesByDeliveryId: { 1001: [DEFAULT_PACKAGE_A, DEFAULT_PACKAGE_B] },
   locations: [DEFAULT_LOCATION_FULFILLMENT, DEFAULT_LOCATION_VAULT],
   activePackages: [DEFAULT_ACTIVE_PACKAGE_A, DEFAULT_ACTIVE_PACKAGE_B],
+  inactivePackages: [DEFAULT_INACTIVE_PACKAGE],
+  onHoldPackages: [DEFAULT_ON_HOLD_PACKAGE],
   items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
   salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
@@ -351,6 +375,12 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getActivePackages(): Promise<MetrcActivePackage[]> {
       return [...fixtures.activePackages];
+    },
+    async getInactivePackages(): Promise<MetrcActivePackage[]> {
+      return [...fixtures.inactivePackages];
+    },
+    async getOnHoldPackages(): Promise<MetrcActivePackage[]> {
+      return [...fixtures.onHoldPackages];
     },
     async getActiveItems(): Promise<MetrcItem[]> {
       return [...fixtures.items];

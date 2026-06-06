@@ -60,6 +60,12 @@ export interface MetrcClient {
   /** API: GET /packages/v2/active (LastModified-quirk) */
   getActivePackages(): Promise<MetrcActivePackage[]>;
 
+  /** API: GET /packages/v2/inactive (LastModified-quirk) */
+  getInactivePackages(): Promise<MetrcActivePackage[]>;
+
+  /** API: GET /packages/v2/onhold (LastModified-quirk) */
+  getOnHoldPackages(): Promise<MetrcActivePackage[]>;
+
   /** API: GET /items/v2/active (LastModified-quirk) */
   getActiveItems(): Promise<MetrcItem[]>;
 

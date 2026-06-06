@@ -1,0 +1,10 @@
+{
+  "endpoint": "/packages/v2/{id}/history",
+  "capturedAt": "2026-06-06T01:34:14.376Z",
+  "method": "GET",
+  "envelope": "paginated",
+  "naturalKey": null,
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "ERROR: METRC client error: 404",
+  "fieldTypes": {}
+}

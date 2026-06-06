@@ -34,3 +34,8 @@ export {
 export type {
   CoverageStatus, ResourceCoverage, EndpointCoverage, HelperCoverage,
 } from "./coverage.js";
+
+export { groupByLocation } from "./helpers/group-by-location.js";
+export type { LocationGrouping } from "./helpers/group-by-location.js";
+export { siteSnapshot } from "./helpers/site-snapshot.js";
+export type { SiteSnapshot } from "./helpers/site-snapshot.js";

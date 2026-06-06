@@ -41,6 +41,8 @@ describe("createMockMetrcClient", () => {
       packagesByDeliveryId: {},
       locations: [],
       activePackages: [],
+      inactivePackages: [],
+      onHoldPackages: [],
       items: [],
       salesReceipts: [],
       salesReceiptDetailsById: {},
@@ -50,6 +52,8 @@ describe("createMockMetrcClient", () => {
     expect(await client.getDeliveriesWithPackages()).toEqual([]);
     expect(await client.getActiveLocations()).toEqual([]);
     expect(await client.getActivePackages()).toEqual([]);
+    expect(await client.getInactivePackages()).toEqual([]);
+    expect(await client.getOnHoldPackages()).toEqual([]);
     expect(await client.getActiveItems()).toEqual([]);
     expect(await client.getActiveSalesReceipts({
       lastModifiedStart: "2026-01-01T00:00:00Z",
@@ -153,5 +157,35 @@ describe("createMockMetrcClient", () => {
   it("getSalesReceiptById throws for an unknown receipt id", async () => {
     const client = createMockMetrcClient();
     await expect(client.getSalesReceiptById(999999)).rejects.toThrow(/no sales receipt fixture/);
+  });
+
+  it("default inactive packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const pkgs = await client.getInactivePackages();
+    expect(pkgs.length).toBeGreaterThan(0);
+    for (const p of pkgs) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getInactivePackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getInactivePackages();
+    const b = await client.getInactivePackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default on-hold packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const pkgs = await client.getOnHoldPackages();
+    expect(pkgs.length).toBeGreaterThan(0);
+    for (const p of pkgs) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getOnHoldPackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getOnHoldPackages();
+    const b = await client.getOnHoldPackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
   });
 });

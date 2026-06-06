@@ -1,12 +1,12 @@
 {
   "endpoint": "/packages/v2/active",
-  "capturedAt": "2026-05-25T21:55:59.006Z",
+  "capturedAt": "2026-06-05T21:51:15.249Z",
   "bareRequest": {
-    "totalRecords": 162,
+    "totalRecords": 231,
     "recordsOnPage": 5
   },
   "windowedRequest": {
-    "totalRecords": 1424,
+    "totalRecords": 1503,
     "recordsOnPage": 5
   },
   "verdict": "INCONCLUSIVE: counts differ but bare is non-zero"

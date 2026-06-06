@@ -1,0 +1,10 @@
+{
+  "endpoint": "/packages/v2/types",
+  "capturedAt": "2026-06-06T01:34:12.862Z",
+  "method": "GET",
+  "envelope": "bare-array",
+  "naturalKey": null,
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "shape captured",
+  "fieldTypes": {}
+}

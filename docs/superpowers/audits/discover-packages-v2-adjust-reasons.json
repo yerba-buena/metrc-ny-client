@@ -1,0 +1,17 @@
+{
+  "endpoint": "/packages/v2/adjust/reasons",
+  "capturedAt": "2026-06-06T01:34:13.315Z",
+  "method": "GET",
+  "envelope": "paginated",
+  "totalRecords": 9,
+  "naturalKey": null,
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "shape captured",
+  "fieldTypes": {
+    "Name": "string",
+    "RequiresNote": "boolean",
+    "RequiresWasteWeight": "boolean",
+    "RequiresImmatureWasteWeight": "boolean",
+    "RequiresMatureWasteWeight": "boolean"
+  }
+}

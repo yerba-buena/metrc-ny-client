@@ -1,0 +1,11 @@
+{
+  "endpoint": "/packages/v2/onhold",
+  "capturedAt": "2026-06-06T01:34:12.596Z",
+  "method": "GET",
+  "envelope": "paginated",
+  "totalRecords": 0,
+  "naturalKey": "Id",
+  "lastModifiedQuirkCheck": "OK",
+  "notes": "bare count: 0, windowed count: 0",
+  "fieldTypes": {}
+}

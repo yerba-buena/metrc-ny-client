@@ -26,6 +26,8 @@ function makeLiveClientFromFixtures(
   packagesByDeliveryId: Record<number, MetrcPackage[]>,
   locations: MetrcLocation[],
   activePackages: MetrcActivePackage[],
+  inactivePackages: MetrcActivePackage[],
+  onHoldPackages: MetrcActivePackage[],
   items: MetrcItem[],
   salesReceipts: MetrcSalesReceipt[],
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
@@ -33,6 +35,8 @@ function makeLiveClientFromFixtures(
   const fetch = vi.fn(async (url: string) => {
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
     if (url.includes("/locations/v2/active")) return okEnvelope(locations) as unknown as Response;
+    if (url.includes("/packages/v2/inactive")) return okEnvelope(inactivePackages) as unknown as Response;
+    if (url.includes("/packages/v2/onhold")) return okEnvelope(onHoldPackages) as unknown as Response;
     if (url.includes("/packages/v2/active")) return okEnvelope(activePackages) as unknown as Response;
     if (url.includes("/items/v2/active")) return okEnvelope(items) as unknown as Response;
     if (url.includes("/sales/v2/receipts/active")) return okEnvelope(salesReceipts) as unknown as Response;
@@ -70,6 +74,8 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.packagesByDeliveryId,
     fixtures.locations,
     fixtures.activePackages,
+    fixtures.inactivePackages,
+    fixtures.onHoldPackages,
     fixtures.items,
     fixtures.salesReceipts,
     fixtures.salesReceiptDetailsById,
@@ -143,5 +149,19 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     expect(() => metrcSalesReceiptDetailSchema.parse(detail)).not.toThrow();
     expect(detail.Id).toBe(knownId);
     expect(detail.Transactions.length).toBeGreaterThan(0);
+  });
+
+  it("getInactivePackages returns packages that parse as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const result = await client.getInactivePackages();
+    expect(result.length).toBe(fixtures.inactivePackages.length);
+    for (const p of result) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getOnHoldPackages returns packages that parse as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const result = await client.getOnHoldPackages();
+    expect(result.length).toBe(fixtures.onHoldPackages.length);
+    for (const p of result) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
   });
 });

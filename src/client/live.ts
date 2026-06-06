@@ -151,6 +151,53 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
     },
 
     /**
+     * API: GET /packages/v2/inactive (LastModified-quirk)
+     *
+     * The Phase 2 discovery audit
+     * (docs/superpowers/audits/discover-packages-v2-inactive.json)
+     * showed bare 8 vs windowed 1419 records — same quirk as
+     * /packages/v2/active. Pass a wide window so every inactive
+     * package is returned regardless of last-edit time.
+     *
+     * Inactive packages share the active package response shape
+     * (only IsFinished/FinishedDate semantics differ); reuse
+     * metrcActivePackageSchema.
+     */
+    async getInactivePackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/inactive";
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/onhold (LastModified-quirk)
+     *
+     * The Phase 2 discovery audit
+     * (docs/superpowers/audits/discover-packages-v2-onhold.json)
+     * showed 0 rows on this license — could not conclusively confirm
+     * the quirk, but the wide-window pattern is applied defensively
+     * since the active and inactive list endpoints both exhibit it.
+     * On-hold packages share the active package response shape.
+     */
+    async getOnHoldPackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/onhold";
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /**
      * API: GET /items/v2/active (LastModified-quirk)
      *
      * Same convention as /locations/v2/active: pass a wide LastModified window

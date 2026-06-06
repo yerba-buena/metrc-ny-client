@@ -272,6 +272,44 @@ describe("createLiveMetrcClient", () => {
     await expect(client.getActivePackages()).rejects.toBeInstanceOf(MetrcResponseError);
   });
 
+  it("getInactivePackages calls /packages/v2/inactive with wide LastModified window", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await client.getInactivePackages();
+    expect(capturedUrl).toContain("/packages/v2/inactive");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
+  });
+
+  it("getOnHoldPackages calls /packages/v2/onhold with wide LastModified window", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await client.getOnHoldPackages();
+    expect(capturedUrl).toContain("/packages/v2/onhold");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
+  });
+
+  it("validateResponses=true rejects malformed inactive packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getInactivePackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("validateResponses=true rejects malformed on-hold packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getOnHoldPackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
   const fakeItem = (id: number) => ({
     Id: id, Name: `Item ${id}`,
     ProductCategoryName: "Flower", ProductCategoryType: "Buds",
