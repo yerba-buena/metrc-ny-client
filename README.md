@@ -15,7 +15,7 @@ Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The resource
 | transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages` | partial | Outgoing, rejected, types, by-id planned. |
 | packages | `/packages/v2/active` | partial | Inactive, onhold, types, adjust reasons, by-id, by-label, history planned. |
 | locations | `/locations/v2/active` | partial | Types planned. |
-| items | `/items/v2/active` | partial | Categories planned. |
+| items | `/items/v2/active`, `/items/v2/categories` | complete | First resource family at full coverage. |
 | sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}` | partial | Transactions, customer types planned. |
 | strains | — | planned | |
 | labtests | — | planned | |

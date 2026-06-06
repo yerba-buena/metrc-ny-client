@@ -3,7 +3,7 @@ import {
   metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
   metrcLocationSchema, metrcActivePackageSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
-  metrcSalesTransactionSchema,
+  metrcSalesTransactionSchema, metrcItemCategorySchema,
 } from "../src/schemas/index.js";
 
 const sampleTransfer = {
@@ -322,5 +322,36 @@ describe("metrcSalesReceiptDetailSchema", () => {
   it("rejects when Transactions contains an invalid line item", () => {
     const bad = { ...sampleReceiptDetail, Transactions: [{ ...sampleTransaction, QuantitySold: "two" }] };
     expect(() => metrcSalesReceiptDetailSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleItemCategory = {
+  Name: "Bud/Flower - Each",
+  ProductCategoryType: "Buds",
+  QuantityType: "WeightBased",
+  CanBeDecontaminated: false,
+  CanBeDestroyed: true,
+  CanBePreTreated: false,
+  CanBeRemediated: false,
+  CanContainSeeds: false,
+  RequiresStrain: true,
+  RequiresItemBrand: false,
+  // long tail preserved via passthrough — populate one representative null + one array to exercise the passthrough path
+  MaxDaysForRecoveryAfterFailure: null,
+  LabTestBatchNames: [],
+};
+
+describe("metrcItemCategorySchema", () => {
+  it("parses a well-formed item category", () => {
+    expect(() => metrcItemCategorySchema.parse(sampleItemCategory)).not.toThrow();
+  });
+  it("rejects a category missing Name", () => {
+    const bad: Record<string, unknown> = { ...sampleItemCategory };
+    delete bad.Name;
+    expect(() => metrcItemCategorySchema.parse(bad)).toThrow();
+  });
+  it("rejects a category with wrong type on CanContainSeeds", () => {
+    const bad = { ...sampleItemCategory, CanContainSeeds: "not-a-bool" };
+    expect(() => metrcItemCategorySchema.parse(bad)).toThrow();
   });
 });

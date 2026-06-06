@@ -3,6 +3,7 @@ import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+  MetrcItemCategory,
 } from "../schemas/index.js";
 import type { Logger } from "../logger.js";
 import type { RetryConfig } from "../transport/retry.js";
@@ -62,6 +63,9 @@ export interface MetrcClient {
 
   /** API: GET /items/v2/active (LastModified-quirk) */
   getActiveItems(): Promise<MetrcItem[]>;
+
+  /** API: GET /items/v2/categories */
+  getItemCategories(): Promise<MetrcItemCategory[]>;
 
   /** API: GET /sales/v2/receipts/active */
   getActiveSalesReceipts(window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]>;

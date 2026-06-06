@@ -67,10 +67,10 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
   } as const),
   Object.freeze({
     resource: "items",
-    status: "partial" as const,
+    status: "complete" as const,
     endpoints: [
       { path: "/items/v2/active", method: "GET" as const, clientMethod: "getActiveItems", status: "complete" as const },
-      { path: "/items/v2/categories", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/items/v2/categories", method: "GET" as const, clientMethod: "getItemCategories", status: "complete" as const },
     ] as const,
   } as const),
   Object.freeze({
