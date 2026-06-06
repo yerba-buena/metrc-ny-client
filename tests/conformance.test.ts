@@ -40,6 +40,8 @@ function makeLiveClientFromFixtures(
   onHoldPackages: MetrcActivePackage[],
   packageTypes: string[],
   packageAdjustReasons: MetrcPackageAdjustReason[],
+  packageDetailsById: Record<number, MetrcActivePackage>,
+  packageDetailsByLabel: Record<string, MetrcActivePackage>,
   items: MetrcItem[],
   salesReceipts: MetrcSalesReceipt[],
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
@@ -63,6 +65,20 @@ function makeLiveClientFromFixtures(
         ok: true, status: 200, headers: new Headers(),
         json: async () => detail,
         text: async () => "",
+      } as unknown as Response;
+    }
+    // /packages/v2/{id-or-label} — must come after the list/lookup matchers above.
+    const pkgDetailMatch = url.match(/\/packages\/v2\/([^/?]+)(?:\?|$)/);
+    if (pkgDetailMatch) {
+      const idOrLabel = pkgDetailMatch[1]!;
+      const asNum = Number(idOrLabel);
+      const pkg = Number.isFinite(asNum) && packageDetailsById[asNum]
+        ? packageDetailsById[asNum]
+        : packageDetailsByLabel[idOrLabel];
+      if (!pkg) throw new Error(`fixture: no package detail for ${idOrLabel}`);
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => pkg, text: async () => "",
       } as unknown as Response;
     }
     const m = url.match(/\/deliveries\/(\d+)\/packages/);
@@ -92,6 +108,8 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.onHoldPackages,
     fixtures.packageTypes,
     fixtures.packageAdjustReasons,
+    fixtures.packageDetailsById,
+    fixtures.packageDetailsByLabel,
     fixtures.items,
     fixtures.salesReceipts,
     fixtures.salesReceiptDetailsById,
@@ -193,5 +211,22 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const result = await client.getPackageAdjustReasons();
     expect(result.length).toBe(fixtures.packageAdjustReasons.length);
     for (const r of result) expect(() => metrcPackageAdjustReasonSchema.parse(r)).not.toThrow();
+  });
+
+  it("getPackageById returns a single package that parses as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.packageDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const pkg = await client.getPackageById(knownId);
+    expect(pkg.Id).toBe(knownId);
+    expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getPackageByLabel returns a single package that parses as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const knownLabel = Object.keys(fixtures.packageDetailsByLabel)[0]!;
+    const pkg = await client.getPackageByLabel(knownLabel);
+    expect(pkg.Label).toBe(knownLabel);
+    expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
   });
 });

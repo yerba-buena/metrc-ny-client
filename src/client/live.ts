@@ -215,6 +215,20 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       return validateArray(metrcPackageAdjustReasonSchema, data, endpoint);
     },
 
+    /** API: GET /packages/v2/{id} */
+    async getPackageById(id: number): Promise<MetrcActivePackage> {
+      const endpoint = `/packages/v2/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /** API: GET /packages/v2/{label} */
+    async getPackageByLabel(label: string): Promise<MetrcActivePackage> {
+      const endpoint = `/packages/v2/${label}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcActivePackageSchema, data, endpoint);
+    },
+
     /**
      * API: GET /items/v2/active (LastModified-quirk)
      *

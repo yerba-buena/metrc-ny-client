@@ -46,6 +46,8 @@ describe("createMockMetrcClient", () => {
       onHoldPackages: [],
       packageTypes: [],
       packageAdjustReasons: [],
+      packageDetailsById: {},
+      packageDetailsByLabel: {},
       items: [],
       salesReceipts: [],
       salesReceiptDetailsById: {},
@@ -222,5 +224,32 @@ describe("createMockMetrcClient", () => {
     const b = await client.getPackageAdjustReasons();
     expect(a).toEqual(b);
     expect(a).not.toBe(b);
+  });
+
+  it("getPackageById returns the fixture entry for the given id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.packageDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const pkg = await client.getPackageById(knownId);
+    expect(pkg.Id).toBe(knownId);
+    expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getPackageById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getPackageById(999999)).rejects.toThrow(/no package fixture/);
+  });
+
+  it("getPackageByLabel returns the fixture entry for the given label", async () => {
+    const client = createMockMetrcClient();
+    const knownLabel = Object.keys(DEFAULT_MOCK_FIXTURES.packageDetailsByLabel)[0]!;
+    const pkg = await client.getPackageByLabel(knownLabel);
+    expect(pkg.Label).toBe(knownLabel);
+    expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getPackageByLabel throws for an unknown label", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getPackageByLabel("NOPE")).rejects.toThrow(/no package fixture/);
   });
 });

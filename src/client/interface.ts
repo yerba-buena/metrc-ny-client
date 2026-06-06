@@ -72,6 +72,12 @@ export interface MetrcClient {
   /** API: GET /packages/v2/adjust/reasons */
   getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]>;
 
+  /** API: GET /packages/v2/{id} */
+  getPackageById(id: number): Promise<MetrcActivePackage>;
+
+  /** API: GET /packages/v2/{label} */
+  getPackageByLabel(label: string): Promise<MetrcActivePackage>;
+
   /** API: GET /items/v2/active (LastModified-quirk) */
   getActiveItems(): Promise<MetrcItem[]>;
 

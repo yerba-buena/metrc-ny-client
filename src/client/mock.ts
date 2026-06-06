@@ -14,6 +14,8 @@ export interface MockFixtures {
   onHoldPackages: MetrcActivePackage[];
   packageTypes: string[];
   packageAdjustReasons: MetrcPackageAdjustReason[];
+  packageDetailsById: Record<number, MetrcActivePackage>;
+  packageDetailsByLabel: Record<string, MetrcActivePackage>;
   items: MetrcItem[];
   salesReceipts: MetrcSalesReceipt[];
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
@@ -292,6 +294,14 @@ const DEFAULT_PACKAGE_ADJUST_REASONS: MetrcPackageAdjustReason[] = [
   },
 ];
 
+const DEFAULT_PACKAGE_DETAILS_BY_ID: Record<number, MetrcActivePackage> = {
+  [DEFAULT_ACTIVE_PACKAGE_A.Id]: DEFAULT_ACTIVE_PACKAGE_A,
+};
+
+const DEFAULT_PACKAGE_DETAILS_BY_LABEL: Record<string, MetrcActivePackage> = {
+  [DEFAULT_ACTIVE_PACKAGE_A.Label]: DEFAULT_ACTIVE_PACKAGE_A,
+};
+
 const DEFAULT_ITEM_CATALOG_A: MetrcItem = {
   Id: 1,
   Name: "Mock Flower 3.5g",
@@ -374,6 +384,8 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   onHoldPackages: [DEFAULT_ON_HOLD_PACKAGE],
   packageTypes: DEFAULT_PACKAGE_TYPES,
   packageAdjustReasons: DEFAULT_PACKAGE_ADJUST_REASONS,
+  packageDetailsById: DEFAULT_PACKAGE_DETAILS_BY_ID,
+  packageDetailsByLabel: DEFAULT_PACKAGE_DETAILS_BY_LABEL,
   items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
   salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
@@ -410,6 +422,16 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]> {
       return [...fixtures.packageAdjustReasons];
+    },
+    async getPackageById(id: number): Promise<MetrcActivePackage> {
+      const pkg = fixtures.packageDetailsById[id];
+      if (!pkg) throw new Error(`mock: no package fixture for id ${id}`);
+      return { ...pkg };
+    },
+    async getPackageByLabel(label: string): Promise<MetrcActivePackage> {
+      const pkg = fixtures.packageDetailsByLabel[label];
+      if (!pkg) throw new Error(`mock: no package fixture for label ${label}`);
+      return { ...pkg };
     },
     async getActiveItems(): Promise<MetrcItem[]> {
       return [...fixtures.items];

@@ -520,4 +520,49 @@ describe("createLiveMetrcClient", () => {
     const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
     await expect(client.getPackageAdjustReasons()).rejects.toBeInstanceOf(MetrcResponseError);
   });
+
+  it("getPackageById calls /packages/v2/{id} and returns the single object", async () => {
+    let capturedUrl = "";
+    const mockClient = await import("../src/client/mock.js").then(m => m.createMockMetrcClient());
+    const fakePkg = (await mockClient.getActivePackages())[0]!;
+    const singleObjectResponse = {
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => fakePkg, text: async () => "",
+    } as unknown as Response;
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return singleObjectResponse;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageById(fakePkg.Id);
+    expect(capturedUrl).toContain(`/packages/v2/${fakePkg.Id}`);
+    expect(result.Id).toBe(fakePkg.Id);
+  });
+
+  it("getPackageByLabel calls /packages/v2/{label} and returns the single object", async () => {
+    let capturedUrl = "";
+    const mockClient = await import("../src/client/mock.js").then(m => m.createMockMetrcClient());
+    const fakePkg = (await mockClient.getActivePackages())[0]!;
+    const singleObjectResponse = {
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => fakePkg, text: async () => "",
+    } as unknown as Response;
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return singleObjectResponse;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageByLabel(fakePkg.Label);
+    expect(capturedUrl).toContain(`/packages/v2/${fakePkg.Label}`);
+    expect(result.Label).toBe(fakePkg.Label);
+  });
+
+  it("validateResponses=true rejects a malformed package detail via Zod", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => ({ not: "a package" }), text: async () => "",
+    } as unknown as Response));
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageById(1)).rejects.toBeInstanceOf(MetrcResponseError);
+  });
 });
