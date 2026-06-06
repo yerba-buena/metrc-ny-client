@@ -13,7 +13,7 @@ Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The resource
 | Resource | Endpoints implemented | Status | Notes |
 |---|---|---|---|
 | transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages` | partial | Outgoing, rejected, types, by-id planned. |
-| packages | `/packages/v2/active` | partial | Inactive, onhold, types, adjust reasons, by-id, by-label, history planned. |
+| packages | `/packages/v2/active`, `/packages/v2/inactive`, `/packages/v2/onhold`, `/packages/v2/types`, `/packages/v2/adjust/reasons`, `/packages/v2/{id}`, `/packages/v2/{label}` | complete | `/packages/v2/{id}/history` deferred — endpoint returned 404, see [issue #13](https://github.com/yerba-buena/metrc-ny-client/issues/13). |
 | locations | `/locations/v2/active` | partial | Types planned. |
 | items | `/items/v2/active` | partial | Categories planned. |
 | sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}` | partial | Transactions, customer types planned. |
@@ -33,6 +33,8 @@ These are conveniences and compositions added by this client, not part of the ME
 
 | Helper / type | Composes / built on | Description |
 |---|---|---|
+| `groupByLocation` | (pure helper over `MetrcActivePackage[]`) | Buckets a list of packages by `LocationName`. Null locations bucket under `<no location>`. |
+| `siteSnapshot` | `getActiveLocations` + `getActivePackages` + `getInactivePackages` + `getOnHoldPackages` | "What's on site, where" snapshot — returns `{ locations, packagesByLocation, counts: { active, inactive, onHold } }`. |
 | `getDeliveriesWithPackages` | `getIncomingTransfers` + `getPackagesForDelivery` | One entry per incoming transfer with its packages loaded inline. Sequential fetches today. |
 | `SalesReceiptsWindow` | n/a (type) | Required `lastModifiedStart` + `lastModifiedEnd` window for `getActiveSalesReceipts`. Boundary-validated. |
 | `CLIENT_COVERAGE` | n/a (constant) | Typed introspection map of per-resource coverage status (see [Coverage](#coverage)). |
