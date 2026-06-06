@@ -75,4 +75,43 @@ describe("CLIENT_COVERAGE", () => {
       expect(entry!.status).toBe("out-of-scope-for-now");
     }
   });
+
+  it("marks packages resource as complete (active + inactive + onhold + types + adjust/reasons + by-id + by-label all done)", () => {
+    const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
+    expect(packages.status).toBe("complete");
+  });
+
+  it("lists every packages endpoint that landed in phase 2 as complete", () => {
+    const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
+    const byPath = Object.fromEntries(packages.endpoints.map(e => [e.path, e]));
+    expect(byPath["/packages/v2/inactive"]?.clientMethod).toBe("getInactivePackages");
+    expect(byPath["/packages/v2/inactive"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/onhold"]?.clientMethod).toBe("getOnHoldPackages");
+    expect(byPath["/packages/v2/onhold"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/types"]?.clientMethod).toBe("getPackageTypes");
+    expect(byPath["/packages/v2/types"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/adjust/reasons"]?.clientMethod).toBe("getPackageAdjustReasons");
+    expect(byPath["/packages/v2/adjust/reasons"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/{id}"]?.clientMethod).toBe("getPackageById");
+    expect(byPath["/packages/v2/{id}"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/{label}"]?.clientMethod).toBe("getPackageByLabel");
+    expect(byPath["/packages/v2/{label}"]?.status).toBe("complete");
+  });
+
+  it("marks /packages/v2/{id}/history as out-of-scope-for-now (METRC returned 404 in discovery)", () => {
+    const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
+    const history = packages.endpoints.find((e) => e.path === "/packages/v2/{id}/history");
+    expect(history?.status).toBe("out-of-scope-for-now");
+    expect(history?.clientMethod).toBeNull();
+  });
+
+  it("lists groupByLocation and siteSnapshot under packages.helpers", () => {
+    const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
+    const helperNames = (packages.helpers ?? []).map(h => h.name).sort();
+    expect(helperNames).toEqual(["groupByLocation", "siteSnapshot"]);
+    const siteSnap = packages.helpers?.find(h => h.name === "siteSnapshot")!;
+    expect(siteSnap.composes).toEqual(expect.arrayContaining([
+      "getActiveLocations", "getActivePackages", "getInactivePackages", "getOnHoldPackages",
+    ]));
+  });
 });
