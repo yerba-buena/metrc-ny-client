@@ -4,6 +4,7 @@ import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+  metrcItemCategorySchema,
 } from "../src/schemas/index.js";
 
 describe("createMockMetrcClient", () => {
@@ -51,6 +52,7 @@ describe("createMockMetrcClient", () => {
       items: [],
       salesReceipts: [],
       salesReceiptDetailsById: {},
+      itemCategories: [],
     };
     const client = createMockMetrcClient(fixtures);
     expect(await client.getIncomingTransfers()).toEqual([]);
@@ -251,5 +253,20 @@ describe("createMockMetrcClient", () => {
   it("getPackageByLabel throws for an unknown label", async () => {
     const client = createMockMetrcClient();
     await expect(client.getPackageByLabel("NOPE")).rejects.toThrow(/no package fixture/);
+  });
+
+  it("default item categories parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const categories = await client.getItemCategories();
+    expect(categories.length).toBeGreaterThan(0);
+    for (const c of categories) expect(() => metrcItemCategorySchema.parse(c)).not.toThrow();
+  });
+
+  it("getItemCategories returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getItemCategories();
+    const b = await client.getItemCategories();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
   });
 });

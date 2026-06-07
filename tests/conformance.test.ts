@@ -6,11 +6,13 @@ import type { MetrcClient } from "../src/client/interface.js";
 import type {
   MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
+  MetrcItemCategory,
 } from "../src/schemas/index.js";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
+  metrcItemCategorySchema,
 } from "../src/schemas/index.js";
 
 const okEnvelope = (data: unknown[]) => ({
@@ -45,8 +47,10 @@ function makeLiveClientFromFixtures(
   items: MetrcItem[],
   salesReceipts: MetrcSalesReceipt[],
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
+  itemCategories: MetrcItemCategory[],
 ): MetrcClient {
   const fetch = vi.fn(async (url: string) => {
+    if (url.includes("/items/v2/categories")) return okEnvelope(itemCategories) as unknown as Response;
     if (url.includes("/packages/v2/types")) return bareArray(packageTypes) as unknown as Response;
     if (url.includes("/packages/v2/adjust/reasons")) return okEnvelope(packageAdjustReasons) as unknown as Response;
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
@@ -113,6 +117,7 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.items,
     fixtures.salesReceipts,
     fixtures.salesReceiptDetailsById,
+    fixtures.itemCategories,
   )],
 ];
 
@@ -228,5 +233,12 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const pkg = await client.getPackageByLabel(knownLabel);
     expect(pkg.Label).toBe(knownLabel);
     expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getItemCategories returns categories that parse as MetrcItemCategory", async () => {
+    const client = makeClient();
+    const result = await client.getItemCategories();
+    expect(result.length).toBe(fixtures.itemCategories.length);
+    for (const c of result) expect(() => metrcItemCategorySchema.parse(c)).not.toThrow();
   });
 });

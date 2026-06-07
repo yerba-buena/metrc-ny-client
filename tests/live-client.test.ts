@@ -310,6 +310,32 @@ describe("createLiveMetrcClient", () => {
     await expect(client.getOnHoldPackages()).rejects.toBeInstanceOf(MetrcResponseError);
   });
 
+  it("getItemCategories calls /items/v2/categories and returns Data", async () => {
+    let capturedUrl = "";
+    const fakeCategory = {
+      Name: "Bud/Flower - Each", ProductCategoryType: "Buds", QuantityType: "WeightBased",
+      CanBeDecontaminated: false, CanBeDestroyed: true, CanBePreTreated: false,
+      CanBeRemediated: false, CanContainSeeds: false,
+      RequiresStrain: true, RequiresItemBrand: false,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeCategory]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getItemCategories();
+    expect(capturedUrl).toContain("/items/v2/categories");
+    expect(capturedUrl).toContain("licenseNumber=LIC-1");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Bud/Flower - Each");
+  });
+
+  it("validateResponses=true rejects malformed item categories via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a category" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getItemCategories()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
   const fakeItem = (id: number) => ({
     Id: id, Name: `Item ${id}`,
     ProductCategoryName: "Flower", ProductCategoryType: "Buds",

@@ -6,3 +6,4 @@ export * from "./active-package.js";
 export * from "./package-adjust-reason.js";
 export * from "./item.js";
 export * from "./sales-receipt.js";
+export * from "./item-category.js";
