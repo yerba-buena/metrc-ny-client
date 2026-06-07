@@ -36,7 +36,6 @@ describe("siteSnapshot", () => {
   it("composes locations + 3 package categories with grouping and counts", async () => {
     const client = createMockMetrcClient(); // uses DEFAULT_MOCK_FIXTURES
     const snapshot = await siteSnapshot(client);
-    // The default fixtures: locations=2, active=2, inactive=[], onhold=[]
     expect(snapshot.locations.length).toBe(DEFAULT_MOCK_FIXTURES.locations.length);
     expect(snapshot.counts.active).toBe(DEFAULT_MOCK_FIXTURES.activePackages.length);
     expect(snapshot.counts.inactive).toBe(DEFAULT_MOCK_FIXTURES.inactivePackages.length);

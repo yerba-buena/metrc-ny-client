@@ -4,14 +4,17 @@ import { MetrcResponseError } from "../errors.js";
 /**
  * Variant of `request` for endpoints that return a bare JSON array
  * (no Data/Total/Page envelope). Today's only known example is
- * `/packages/v2/types`. Validates the top-level shape but leaves
- * per-element validation to the caller (via a Zod schema applied
- * to the returned array, same pattern as validateArray in live.ts).
+ * `/packages/v2/types`. Validates ONLY that the top-level value is
+ * an array; per-element validation is the caller's responsibility.
  *
- * Uses the same Requester transport as paginated endpoints. The
- * passed `request` should be the `Requester` already constructed
- * inside `createLiveMetrcClient` so auth / rate-limiting / retry
- * are reused.
+ * The caller MUST apply `validateArray(schema, ..., endpoint)` (or
+ * an equivalent per-element check) when they want
+ * `validateResponses: true` to actually enforce the per-element
+ * contract — otherwise the strongly-typed return is a TypeScript
+ * lie that the runtime won't catch.
+ *
+ * Uses the same Requester transport as paginated endpoints; auth,
+ * rate-limiting, and retry are reused.
  */
 export async function requestArray<T>(
   request: Requester,

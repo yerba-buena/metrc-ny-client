@@ -495,6 +495,19 @@ describe("createLiveMetrcClient", () => {
     expect(result).toEqual(["Product", "ImmaturePlant"]);
   });
 
+  it("validateResponses=true rejects non-string package types via Zod", async () => {
+    const fetch = vi.fn(async () => bareArray([42, "Product"]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageTypes()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("validateResponses=false (default) accepts non-string package types without parsing", async () => {
+    const fetch = vi.fn(async () => bareArray([42, "Product"]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageTypes();
+    expect(result.length).toBe(2);
+  });
+
   it("getPackageAdjustReasons calls /packages/v2/adjust/reasons and returns Data", async () => {
     let capturedUrl = "";
     const fakeReason = {

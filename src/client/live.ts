@@ -202,7 +202,8 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
     /** API: GET /packages/v2/types */
     async getPackageTypes(): Promise<string[]> {
       const endpoint = "/packages/v2/types";
-      return requestArray<string>(request, endpoint);
+      const data = await requestArray<unknown>(request, endpoint);
+      return validateArray(z.string(), data, endpoint);
     },
 
     /** API: GET /packages/v2/adjust/reasons */
