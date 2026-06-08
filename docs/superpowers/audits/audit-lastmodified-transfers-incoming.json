@@ -1,12 +1,12 @@
 {
   "endpoint": "/transfers/v2/incoming",
-  "capturedAt": "2026-05-25T21:55:59.516Z",
+  "capturedAt": "2026-06-05T21:51:16.962Z",
   "bareRequest": {
-    "totalRecords": 1,
-    "recordsOnPage": 1
+    "totalRecords": 8,
+    "recordsOnPage": 5
   },
   "windowedRequest": {
-    "totalRecords": 365,
+    "totalRecords": 396,
     "recordsOnPage": 5
   },
   "verdict": "INCONCLUSIVE: counts differ but bare is non-zero"

@@ -1,6 +1,6 @@
 {
-  "endpoint": "/transfers/v2/deliveries/240709/packages",
-  "capturedAt": "2026-05-25T21:56:00.293Z",
+  "endpoint": "/transfers/v2/deliveries/259063/packages",
+  "capturedAt": "2026-06-05T21:51:18.941Z",
   "bareRequest": {
     "totalRecords": 4,
     "recordsOnPage": 4

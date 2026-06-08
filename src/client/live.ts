@@ -1,14 +1,16 @@
 import type { MetrcClient, MetrcConfig, SalesReceiptsWindow } from "./interface.js";
 import { createRequester } from "../transport/request.js";
+import { requestArray } from "../transport/request-array.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
 } from "../schemas/index.js";
 import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
 } from "../schemas/index.js";
@@ -150,6 +152,84 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
         endpoint,
       );
       return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/inactive (LastModified-quirk)
+     *
+     * The Phase 2 discovery audit
+     * (docs/superpowers/audits/discover-packages-v2-inactive.json)
+     * showed bare 8 vs windowed 1419 records — same quirk as
+     * /packages/v2/active. Pass a wide window so every inactive
+     * package is returned regardless of last-edit time.
+     *
+     * Inactive packages share the active package response shape
+     * (only IsFinished/FinishedDate semantics differ); reuse
+     * metrcActivePackageSchema.
+     */
+    async getInactivePackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/inactive";
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/onhold (LastModified-quirk)
+     *
+     * The Phase 2 discovery audit
+     * (docs/superpowers/audits/discover-packages-v2-onhold.json)
+     * showed 0 rows on this license — could not conclusively confirm
+     * the quirk, but the wide-window pattern is applied defensively
+     * since the active and inactive list endpoints both exhibit it.
+     * On-hold packages share the active package response shape.
+     */
+    async getOnHoldPackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/onhold";
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /** API: GET /packages/v2/types */
+    async getPackageTypes(): Promise<string[]> {
+      const endpoint = "/packages/v2/types";
+      const data = await requestArray<unknown>(request, endpoint);
+      return validateArray(z.string(), data, endpoint);
+    },
+
+    /** API: GET /packages/v2/adjust/reasons */
+    async getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]> {
+      const endpoint = "/packages/v2/adjust/reasons";
+      const data = await fetchAllPages<MetrcPackageAdjustReason>(
+        paged<MetrcPackageAdjustReason>(endpoint),
+        endpoint,
+      );
+      return validateArray(metrcPackageAdjustReasonSchema, data, endpoint);
+    },
+
+    /** API: GET /packages/v2/{id} */
+    async getPackageById(id: number): Promise<MetrcActivePackage> {
+      const endpoint = `/packages/v2/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /** API: GET /packages/v2/{label} */
+    async getPackageByLabel(label: string): Promise<MetrcActivePackage> {
+      const endpoint = `/packages/v2/${label}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcActivePackageSchema, data, endpoint);
     },
 
     /**

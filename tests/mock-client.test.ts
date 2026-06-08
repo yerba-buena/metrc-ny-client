@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createMockMetrcClient, type MockFixtures, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import {
   metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
 } from "../src/schemas/index.js";
@@ -42,6 +43,12 @@ describe("createMockMetrcClient", () => {
       packagesByDeliveryId: {},
       locations: [],
       activePackages: [],
+      inactivePackages: [],
+      onHoldPackages: [],
+      packageTypes: [],
+      packageAdjustReasons: [],
+      packageDetailsById: {},
+      packageDetailsByLabel: {},
       items: [],
       salesReceipts: [],
       salesReceiptDetailsById: {},
@@ -52,6 +59,10 @@ describe("createMockMetrcClient", () => {
     expect(await client.getDeliveriesWithPackages()).toEqual([]);
     expect(await client.getActiveLocations()).toEqual([]);
     expect(await client.getActivePackages()).toEqual([]);
+    expect(await client.getInactivePackages()).toEqual([]);
+    expect(await client.getOnHoldPackages()).toEqual([]);
+    expect(await client.getPackageTypes()).toEqual([]);
+    expect(await client.getPackageAdjustReasons()).toEqual([]);
     expect(await client.getActiveItems()).toEqual([]);
     expect(await client.getActiveSalesReceipts({
       lastModifiedStart: "2026-01-01T00:00:00Z",
@@ -155,6 +166,93 @@ describe("createMockMetrcClient", () => {
   it("getSalesReceiptById throws for an unknown receipt id", async () => {
     const client = createMockMetrcClient();
     await expect(client.getSalesReceiptById(999999)).rejects.toThrow(/no sales receipt fixture/);
+  });
+
+  it("default inactive packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const pkgs = await client.getInactivePackages();
+    expect(pkgs.length).toBeGreaterThan(0);
+    for (const p of pkgs) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getInactivePackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getInactivePackages();
+    const b = await client.getInactivePackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default on-hold packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const pkgs = await client.getOnHoldPackages();
+    expect(pkgs.length).toBeGreaterThan(0);
+    for (const p of pkgs) expect(() => metrcActivePackageSchema.parse(p)).not.toThrow();
+  });
+
+  it("getOnHoldPackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getOnHoldPackages();
+    const b = await client.getOnHoldPackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default package types round-trip", async () => {
+    const client = createMockMetrcClient();
+    const types = await client.getPackageTypes();
+    expect(types.length).toBeGreaterThan(0);
+    for (const t of types) expect(typeof t).toBe("string");
+  });
+
+  it("getPackageTypes returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getPackageTypes();
+    const b = await client.getPackageTypes();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default package adjust reasons parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const reasons = await client.getPackageAdjustReasons();
+    expect(reasons.length).toBeGreaterThan(0);
+    for (const r of reasons) expect(() => metrcPackageAdjustReasonSchema.parse(r)).not.toThrow();
+  });
+
+  it("getPackageAdjustReasons returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getPackageAdjustReasons();
+    const b = await client.getPackageAdjustReasons();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getPackageById returns the fixture entry for the given id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.packageDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const pkg = await client.getPackageById(knownId);
+    expect(pkg.Id).toBe(knownId);
+    expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getPackageById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getPackageById(999999)).rejects.toThrow(/no package fixture/);
+  });
+
+  it("getPackageByLabel returns the fixture entry for the given label", async () => {
+    const client = createMockMetrcClient();
+    const knownLabel = Object.keys(DEFAULT_MOCK_FIXTURES.packageDetailsByLabel)[0]!;
+    const pkg = await client.getPackageByLabel(knownLabel);
+    expect(pkg.Label).toBe(knownLabel);
+    expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getPackageByLabel throws for an unknown label", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getPackageByLabel("NOPE")).rejects.toThrow(/no package fixture/);
   });
 
   it("default item categories parse against the Zod schema", async () => {

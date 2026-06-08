@@ -272,6 +272,44 @@ describe("createLiveMetrcClient", () => {
     await expect(client.getActivePackages()).rejects.toBeInstanceOf(MetrcResponseError);
   });
 
+  it("getInactivePackages calls /packages/v2/inactive with wide LastModified window", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await client.getInactivePackages();
+    expect(capturedUrl).toContain("/packages/v2/inactive");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
+  });
+
+  it("getOnHoldPackages calls /packages/v2/onhold with wide LastModified window", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await client.getOnHoldPackages();
+    expect(capturedUrl).toContain("/packages/v2/onhold");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
+  });
+
+  it("validateResponses=true rejects malformed inactive packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getInactivePackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("validateResponses=true rejects malformed on-hold packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getOnHoldPackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
   it("getItemCategories calls /items/v2/categories and returns Data", async () => {
     let capturedUrl = "";
     const fakeCategory = {
@@ -460,5 +498,110 @@ describe("createLiveMetrcClient", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  const bareArray = (data: unknown[]) =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => data,
+      text: async () => "",
+    }) as unknown as Response;
+
+  it("getPackageTypes calls /packages/v2/types and returns the bare string array", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return bareArray(["Product", "ImmaturePlant"]);
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageTypes();
+    expect(capturedUrl).toContain("/packages/v2/types");
+    expect(result).toEqual(["Product", "ImmaturePlant"]);
+  });
+
+  it("validateResponses=true rejects non-string package types via Zod", async () => {
+    const fetch = vi.fn(async () => bareArray([42, "Product"]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageTypes()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("validateResponses=false (default) accepts non-string package types without parsing", async () => {
+    const fetch = vi.fn(async () => bareArray([42, "Product"]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageTypes();
+    expect(result.length).toBe(2);
+  });
+
+  it("getPackageAdjustReasons calls /packages/v2/adjust/reasons and returns Data", async () => {
+    let capturedUrl = "";
+    const fakeReason = {
+      Name: "Spoilage",
+      RequiresNote: false,
+      RequiresWasteWeight: false,
+      RequiresImmatureWasteWeight: false,
+      RequiresMatureWasteWeight: false,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeReason]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageAdjustReasons();
+    expect(capturedUrl).toContain("/packages/v2/adjust/reasons");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Spoilage");
+  });
+
+  it("validateResponses=true rejects malformed adjust reasons via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a reason" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageAdjustReasons()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getPackageById calls /packages/v2/{id} and returns the single object", async () => {
+    let capturedUrl = "";
+    const mockClient = await import("../src/client/mock.js").then(m => m.createMockMetrcClient());
+    const fakePkg = (await mockClient.getActivePackages())[0]!;
+    const singleObjectResponse = {
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => fakePkg, text: async () => "",
+    } as unknown as Response;
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return singleObjectResponse;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageById(fakePkg.Id);
+    expect(capturedUrl).toContain(`/packages/v2/${fakePkg.Id}`);
+    expect(result.Id).toBe(fakePkg.Id);
+  });
+
+  it("getPackageByLabel calls /packages/v2/{label} and returns the single object", async () => {
+    let capturedUrl = "";
+    const mockClient = await import("../src/client/mock.js").then(m => m.createMockMetrcClient());
+    const fakePkg = (await mockClient.getActivePackages())[0]!;
+    const singleObjectResponse = {
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => fakePkg, text: async () => "",
+    } as unknown as Response;
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return singleObjectResponse;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageByLabel(fakePkg.Label);
+    expect(capturedUrl).toContain(`/packages/v2/${fakePkg.Label}`);
+    expect(result.Label).toBe(fakePkg.Label);
+  });
+
+  it("validateResponses=true rejects a malformed package detail via Zod", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => ({ not: "a package" }), text: async () => "",
+    } as unknown as Response));
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageById(1)).rejects.toBeInstanceOf(MetrcResponseError);
   });
 });

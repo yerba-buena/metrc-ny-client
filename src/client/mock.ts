@@ -1,7 +1,7 @@
 import type { MetrcClient, SalesReceiptsWindow } from "./interface.js";
 import type {
   MetrcTransfer, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
 } from "../schemas/index.js";
@@ -11,6 +11,12 @@ export interface MockFixtures {
   packagesByDeliveryId: Record<number, MetrcPackage[]>;
   locations: MetrcLocation[];
   activePackages: MetrcActivePackage[];
+  inactivePackages: MetrcActivePackage[];
+  onHoldPackages: MetrcActivePackage[];
+  packageTypes: string[];
+  packageAdjustReasons: MetrcPackageAdjustReason[];
+  packageDetailsById: Record<number, MetrcActivePackage>;
+  packageDetailsByLabel: Record<string, MetrcActivePackage>;
   items: MetrcItem[];
   salesReceipts: MetrcSalesReceipt[];
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
@@ -251,6 +257,53 @@ const DEFAULT_ACTIVE_PACKAGE_B: MetrcActivePackage = {
   },
 };
 
+const DEFAULT_INACTIVE_PACKAGE: MetrcActivePackage = {
+  ...DEFAULT_ACTIVE_PACKAGE_A,
+  Id: 6001,
+  Label: "1A4FF0300000001000000201",
+  LocationName: "Vault",
+  IsFinished: true,
+  FinishedDate: "2026-03-15",
+  Quantity: 0,
+  ArchivedDate: "2026-03-16",
+};
+
+const DEFAULT_ON_HOLD_PACKAGE: MetrcActivePackage = {
+  ...DEFAULT_ACTIVE_PACKAGE_A,
+  Id: 6002,
+  Label: "1A4FF0300000001000000202",
+  LocationName: "Fulfillment",
+  IsOnHold: true,
+  IsOnHoldCombined: true,
+};
+
+const DEFAULT_PACKAGE_TYPES: string[] = ["Product", "ImmaturePlant", "VegetativePlant"];
+
+const DEFAULT_PACKAGE_ADJUST_REASONS: MetrcPackageAdjustReason[] = [
+  {
+    Name: "Mandatory State Destruction",
+    RequiresNote: true,
+    RequiresWasteWeight: true,
+    RequiresImmatureWasteWeight: false,
+    RequiresMatureWasteWeight: false,
+  },
+  {
+    Name: "Spoilage",
+    RequiresNote: false,
+    RequiresWasteWeight: false,
+    RequiresImmatureWasteWeight: false,
+    RequiresMatureWasteWeight: false,
+  },
+];
+
+const DEFAULT_PACKAGE_DETAILS_BY_ID: Record<number, MetrcActivePackage> = {
+  [DEFAULT_ACTIVE_PACKAGE_A.Id]: DEFAULT_ACTIVE_PACKAGE_A,
+};
+
+const DEFAULT_PACKAGE_DETAILS_BY_LABEL: Record<string, MetrcActivePackage> = {
+  [DEFAULT_ACTIVE_PACKAGE_A.Label]: DEFAULT_ACTIVE_PACKAGE_A,
+};
+
 const DEFAULT_ITEM_CATALOG_A: MetrcItem = {
   Id: 1,
   Name: "Mock Flower 3.5g",
@@ -355,6 +408,12 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   packagesByDeliveryId: { 1001: [DEFAULT_PACKAGE_A, DEFAULT_PACKAGE_B] },
   locations: [DEFAULT_LOCATION_FULFILLMENT, DEFAULT_LOCATION_VAULT],
   activePackages: [DEFAULT_ACTIVE_PACKAGE_A, DEFAULT_ACTIVE_PACKAGE_B],
+  inactivePackages: [DEFAULT_INACTIVE_PACKAGE],
+  onHoldPackages: [DEFAULT_ON_HOLD_PACKAGE],
+  packageTypes: DEFAULT_PACKAGE_TYPES,
+  packageAdjustReasons: DEFAULT_PACKAGE_ADJUST_REASONS,
+  packageDetailsById: DEFAULT_PACKAGE_DETAILS_BY_ID,
+  packageDetailsByLabel: DEFAULT_PACKAGE_DETAILS_BY_LABEL,
   items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
   salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
@@ -380,6 +439,28 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getActivePackages(): Promise<MetrcActivePackage[]> {
       return [...fixtures.activePackages];
+    },
+    async getInactivePackages(): Promise<MetrcActivePackage[]> {
+      return [...fixtures.inactivePackages];
+    },
+    async getOnHoldPackages(): Promise<MetrcActivePackage[]> {
+      return [...fixtures.onHoldPackages];
+    },
+    async getPackageTypes(): Promise<string[]> {
+      return [...fixtures.packageTypes];
+    },
+    async getPackageAdjustReasons(): Promise<MetrcPackageAdjustReason[]> {
+      return [...fixtures.packageAdjustReasons];
+    },
+    async getPackageById(id: number): Promise<MetrcActivePackage> {
+      const pkg = fixtures.packageDetailsById[id];
+      if (!pkg) throw new Error(`mock: no package fixture for id ${id}`);
+      return { ...pkg };
+    },
+    async getPackageByLabel(label: string): Promise<MetrcActivePackage> {
+      const pkg = fixtures.packageDetailsByLabel[label];
+      if (!pkg) throw new Error(`mock: no package fixture for label ${label}`);
+      return { ...pkg };
     },
     async getActiveItems(): Promise<MetrcItem[]> {
       return [...fixtures.items];
