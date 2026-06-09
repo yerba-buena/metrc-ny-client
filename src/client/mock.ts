@@ -1,6 +1,6 @@
 import type { MetrcClient, SalesReceiptsWindow } from "./interface.js";
 import type {
-  MetrcTransfer, MetrcOutgoingTransfer, MetrcPackage, DeliveryWithPackages,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
@@ -10,6 +10,7 @@ export interface MockFixtures {
   transfers: MetrcTransfer[];
   outgoingTransfers: MetrcOutgoingTransfer[];
   rejectedTransfers: MetrcOutgoingTransfer[];
+  transferTypes: MetrcTransferType[];
   packagesByDeliveryId: Record<number, MetrcPackage[]>;
   locations: MetrcLocation[];
   activePackages: MetrcActivePackage[];
@@ -460,10 +461,29 @@ const DEFAULT_RECEIPT_DETAIL_7001: MetrcSalesReceiptDetail = {
 
 const DEFAULT_SALES_CUSTOMER_TYPES: string[] = ["Consumer", "PatientLicense", "CaregiverLicense"];
 
+const DEFAULT_TRANSFER_TYPE: MetrcTransferType = {
+  Name: "Wholesale Manifest",
+  TransactionType: "Standard",
+  BypassApproval: false,
+  ExternalIncomingCanRecordExternalIdentifier: false,
+  ExternalIncomingExternalIdentifierRequired: false,
+  ExternalOutgoingCanRecordExternalIdentifier: false,
+  ExternalOutgoingExternalIdentifierRequired: false,
+  ForExternalIncomingShipments: false,
+  ForExternalOutgoingShipments: false,
+  ForLicensedShipments: true,
+  RequiresDestinationGrossWeight: false,
+  RequiresInvoiceNumber: false,
+  RequiresPDFDocument: false,
+  RequiresPackagesGrossWeight: false,
+  RequiresVehicleRegistrationNumber: false,
+};
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   outgoingTransfers: [DEFAULT_OUTGOING_TRANSFER],
   rejectedTransfers: [],
+  transferTypes: [DEFAULT_TRANSFER_TYPE],
   packagesByDeliveryId: { 1001: [DEFAULT_PACKAGE_A, DEFAULT_PACKAGE_B] },
   locations: [DEFAULT_LOCATION_FULFILLMENT, DEFAULT_LOCATION_VAULT],
   activePackages: [DEFAULT_ACTIVE_PACKAGE_A, DEFAULT_ACTIVE_PACKAGE_B],
@@ -490,6 +510,9 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getRejectedTransfers(): Promise<MetrcOutgoingTransfer[]> {
       return [...fixtures.rejectedTransfers];
+    },
+    async getTransferTypes(): Promise<MetrcTransferType[]> {
+      return [...fixtures.transferTypes];
     },
     async getPackagesForDelivery(deliveryId: number): Promise<MetrcPackage[]> {
       return [...(fixtures.packagesByDeliveryId[deliveryId] ?? [])];

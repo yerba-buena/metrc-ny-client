@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createMockMetrcClient, type MockFixtures, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import {
-  metrcTransferSchema, metrcOutgoingTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
@@ -42,6 +42,7 @@ describe("createMockMetrcClient", () => {
       transfers: [],
       outgoingTransfers: [],
       rejectedTransfers: [],
+      transferTypes: [],
       packagesByDeliveryId: {},
       locations: [],
       activePackages: [],
@@ -61,6 +62,7 @@ describe("createMockMetrcClient", () => {
     expect(await client.getIncomingTransfers()).toEqual([]);
     expect(await client.getOutgoingTransfers()).toEqual([]);
     expect(await client.getRejectedTransfers()).toEqual([]);
+    expect(await client.getTransferTypes()).toEqual([]);
     expect(await client.getDeliveriesWithPackages()).toEqual([]);
     expect(await client.getActiveLocations()).toEqual([]);
     expect(await client.getActivePackages()).toEqual([]);
@@ -310,6 +312,20 @@ describe("createMockMetrcClient", () => {
     const b = await client.getRejectedTransfers();
     expect(a.length).toBe(0);
     expect(b.length).toBe(0);
+    expect(a).not.toBe(b);
+  });
+
+  it("default transfer types parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const types = await client.getTransferTypes();
+    for (const t of types) expect(() => metrcTransferTypeSchema.parse(t)).not.toThrow();
+  });
+
+  it("getTransferTypes returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getTransferTypes();
+    const b = await client.getTransferTypes();
+    expect(a).toEqual(b);
     expect(a).not.toBe(b);
   });
 });

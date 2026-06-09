@@ -1,6 +1,6 @@
 // src/client/interface.ts
 import type {
-  MetrcTransfer, MetrcOutgoingTransfer, MetrcPackage, DeliveryWithPackages,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
@@ -51,6 +51,9 @@ export interface MetrcClient {
 
   /** API: GET /transfers/v2/rejected (LastModified-quirk) */
   getRejectedTransfers(): Promise<MetrcOutgoingTransfer[]>;
+
+  /** API: GET /transfers/v2/types */
+  getTransferTypes(): Promise<MetrcTransferType[]>;
 
   /** API: GET /transfers/v2/deliveries/{deliveryId}/packages */
   getPackagesForDelivery(deliveryId: number): Promise<MetrcPackage[]>;

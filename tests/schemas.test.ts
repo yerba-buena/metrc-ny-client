@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  metrcTransferSchema, metrcOutgoingTransferSchema, metrcPackageSchema, metrcDeliverySchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcDeliverySchema,
   metrcLocationSchema, metrcActivePackageSchema, metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema, metrcItemCategorySchema,
@@ -442,5 +442,37 @@ describe("metrcOutgoingTransferSchema", () => {
   it("rejects an outgoing transfer with wrong type on IsVoided", () => {
     const bad = { ...sampleOutgoingTransfer, IsVoided: "not-a-bool" };
     expect(() => metrcOutgoingTransferSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleTransferType = {
+  Name: "Wholesale Manifest",
+  TransactionType: "Standard",
+  BypassApproval: false,
+  ExternalIncomingCanRecordExternalIdentifier: false,
+  ExternalIncomingExternalIdentifierRequired: false,
+  ExternalOutgoingCanRecordExternalIdentifier: false,
+  ExternalOutgoingExternalIdentifierRequired: false,
+  ForExternalIncomingShipments: false,
+  ForExternalOutgoingShipments: false,
+  ForLicensedShipments: true,
+  RequiresDestinationGrossWeight: false,
+  RequiresInvoiceNumber: false,
+  RequiresPDFDocument: false,
+  RequiresPackagesGrossWeight: false,
+  RequiresVehicleRegistrationNumber: false,
+};
+
+describe("metrcTransferTypeSchema", () => {
+  it("parses a well-formed transfer type", () => {
+    expect(() => metrcTransferTypeSchema.parse(sampleTransferType)).not.toThrow();
+  });
+  it("rejects a transfer type missing Name", () => {
+    const bad = { ...sampleTransferType, Name: undefined };
+    expect(() => metrcTransferTypeSchema.parse(bad)).toThrow();
+  });
+  it("rejects a transfer type with wrong type on ForLicensedShipments", () => {
+    const bad = { ...sampleTransferType, ForLicensedShipments: "not-a-bool" };
+    expect(() => metrcTransferTypeSchema.parse(bad)).toThrow();
   });
 });

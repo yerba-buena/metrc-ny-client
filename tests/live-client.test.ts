@@ -67,6 +67,24 @@ const fakeOutgoingTransfer = (id: number) => ({
   ActualReturnArrivalDateTime: null,
 });
 
+const fakeTransferType = (name: string) => ({
+  Name: name,
+  TransactionType: "Standard",
+  BypassApproval: false,
+  ExternalIncomingCanRecordExternalIdentifier: false,
+  ExternalIncomingExternalIdentifierRequired: false,
+  ExternalOutgoingCanRecordExternalIdentifier: false,
+  ExternalOutgoingExternalIdentifierRequired: false,
+  ForExternalIncomingShipments: false,
+  ForExternalOutgoingShipments: false,
+  ForLicensedShipments: true,
+  RequiresDestinationGrossWeight: false,
+  RequiresInvoiceNumber: false,
+  RequiresPDFDocument: false,
+  RequiresPackagesGrossWeight: false,
+  RequiresVehicleRegistrationNumber: false,
+});
+
 const okEnvelope = (data: unknown[]) => ({
   ok: true, status: 200,
   headers: new Headers(),
@@ -150,6 +168,19 @@ describe("createLiveMetrcClient", () => {
     });
     const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
     await expect(client.getOutgoingTransfers()).rejects.toThrow(MetrcResponseError);
+  });
+
+  it("getTransferTypes calls /transfers/v2/types and returns paginated objects", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeTransferType("Wholesale Manifest"), fakeTransferType("Returns")]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getTransferTypes();
+    expect(capturedUrl).toContain("/transfers/v2/types");
+    expect(result.length).toBe(2);
+    expect(result[0]!.Name).toBe("Wholesale Manifest");
   });
 
   it("getDeliveriesWithPackages combines transfers with their packages", async () => {

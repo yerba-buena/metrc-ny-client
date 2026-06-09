@@ -3,13 +3,13 @@ import { createRequester } from "../transport/request.js";
 import { requestArray } from "../transport/request-array.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
 import {
-  metrcTransferSchema, metrcOutgoingTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
 } from "../schemas/index.js";
 import type {
-  MetrcTransfer, MetrcOutgoingTransfer, MetrcPackage, DeliveryWithPackages,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
@@ -133,6 +133,13 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
         endpoint,
       );
       return validateArray(metrcOutgoingTransferSchema, data, endpoint);
+    },
+
+    /** API: GET /transfers/v2/types */
+    async getTransferTypes(): Promise<MetrcTransferType[]> {
+      const endpoint = "/transfers/v2/types";
+      const data = await fetchAllPages<MetrcTransferType>(paged<MetrcTransferType>(endpoint), endpoint);
+      return validateArray(metrcTransferTypeSchema, data, endpoint);
     },
 
     /** API: GET /transfers/v2/deliveries/{deliveryId}/packages */

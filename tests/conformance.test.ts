@@ -4,12 +4,12 @@ import { createMockMetrcClient, DEFAULT_MOCK_FIXTURES } from "../src/client/mock
 import { NOOP_LOGGER } from "../src/logger.js";
 import type { MetrcClient } from "../src/client/interface.js";
 import type {
-  MetrcTransfer, MetrcOutgoingTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
 } from "../src/schemas/index.js";
 import {
-  metrcTransferSchema, metrcOutgoingTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
@@ -37,6 +37,7 @@ function makeLiveClientFromFixtures(
   transfers: MetrcTransfer[],
   outgoingTransfers: MetrcOutgoingTransfer[],
   rejectedTransfers: MetrcOutgoingTransfer[],
+  transferTypes: MetrcTransferType[],
   packagesByDeliveryId: Record<number, MetrcPackage[]>,
   locations: MetrcLocation[],
   activePackages: MetrcActivePackage[],
@@ -56,6 +57,7 @@ function makeLiveClientFromFixtures(
     if (url.includes("/items/v2/categories")) return okEnvelope(itemCategories) as unknown as Response;
     if (url.includes("/packages/v2/types")) return bareArray(packageTypes) as unknown as Response;
     if (url.includes("/packages/v2/adjust/reasons")) return okEnvelope(packageAdjustReasons) as unknown as Response;
+    if (url.includes("/transfers/v2/types")) return okEnvelope(transferTypes) as unknown as Response;
     if (url.includes("/transfers/v2/outgoing")) return okEnvelope(outgoingTransfers) as unknown as Response;
     if (url.includes("/transfers/v2/rejected")) return okEnvelope(rejectedTransfers) as unknown as Response;
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
@@ -113,6 +115,7 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.transfers,
     fixtures.outgoingTransfers,
     fixtures.rejectedTransfers,
+    fixtures.transferTypes,
     fixtures.packagesByDeliveryId,
     fixtures.locations,
     fixtures.activePackages,
@@ -270,5 +273,12 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const result = await client.getRejectedTransfers();
     expect(result.length).toBe(fixtures.rejectedTransfers.length);
     for (const t of result) expect(() => metrcOutgoingTransferSchema.parse(t)).not.toThrow();
+  });
+
+  it("getTransferTypes returns types that parse as MetrcTransferType", async () => {
+    const client = makeClient();
+    const result = await client.getTransferTypes();
+    expect(result.length).toBe(fixtures.transferTypes.length);
+    for (const t of result) expect(() => metrcTransferTypeSchema.parse(t)).not.toThrow();
   });
 });
