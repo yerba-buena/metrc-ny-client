@@ -12,7 +12,7 @@ Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The resource
 
 | Resource | Endpoints implemented | Status | Notes |
 |---|---|---|---|
-| transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages` | partial | Outgoing, rejected, types, by-id planned. |
+| transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages`, `/transfers/v2/outgoing`, `/transfers/v2/rejected`, `/transfers/v2/types` | partial | `/transfers/v2/{id}` deferred — endpoint returned 404 at every candidate URL, see [issue #18](https://github.com/yerba-buena/metrc-ny-client/issues/18). |
 | packages | `/packages/v2/active`, `/packages/v2/inactive`, `/packages/v2/onhold`, `/packages/v2/types`, `/packages/v2/adjust/reasons`, `/packages/v2/{id}`, `/packages/v2/{label}` | complete | `/packages/v2/{id}/history` deferred — endpoint returned 404, see [issue #13](https://github.com/yerba-buena/metrc-ny-client/issues/13). |
 | locations | `/locations/v2/active` | partial | Types planned. |
 | items | `/items/v2/active`, `/items/v2/categories` | complete | First resource family at full coverage. |

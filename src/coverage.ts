@@ -34,10 +34,10 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
     endpoints: [
       { path: "/transfers/v2/incoming", method: "GET" as const, clientMethod: "getIncomingTransfers", status: "complete" as const },
       { path: "/transfers/v2/deliveries/{id}/packages", method: "GET" as const, clientMethod: "getPackagesForDelivery", status: "complete" as const },
-      { path: "/transfers/v2/outgoing", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/transfers/v2/rejected", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/transfers/v2/types", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/transfers/v2/{id}", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/transfers/v2/outgoing", method: "GET" as const, clientMethod: "getOutgoingTransfers", status: "complete" as const },
+      { path: "/transfers/v2/rejected", method: "GET" as const, clientMethod: "getRejectedTransfers", status: "complete" as const },
+      { path: "/transfers/v2/types", method: "GET" as const, clientMethod: "getTransferTypes", status: "complete" as const },
+      { path: "/transfers/v2/{id}", method: "GET" as const, clientMethod: null, status: "out-of-scope-for-now" as const },
     ] as const,
     helpers: [
       { name: "getDeliveriesWithPackages", composes: ["getIncomingTransfers", "getPackagesForDelivery"] },
