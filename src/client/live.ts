@@ -291,5 +291,12 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       const data = await request<unknown>(endpoint, {});
       return validateOne(metrcSalesReceiptDetailSchema, data, endpoint);
     },
+
+    /** API: GET /sales/v2/customertypes */
+    async getSalesCustomerTypes(): Promise<string[]> {
+      const endpoint = "/sales/v2/customertypes";
+      const data = await requestArray<unknown>(request, endpoint);
+      return validateArray(z.string(), data, endpoint);
+    },
   };
 }

@@ -484,6 +484,31 @@ describe("createLiveMetrcClient", () => {
     await expect(client.getSalesReceiptById(999)).rejects.toThrow();
   });
 
+  it("getSalesCustomerTypes calls /sales/v2/customertypes and returns the bare string array", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return bareArray(["Consumer", "PatientLicense"]);
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesCustomerTypes();
+    expect(capturedUrl).toContain("/sales/v2/customertypes");
+    expect(result).toEqual(["Consumer", "PatientLicense"]);
+  });
+
+  it("validateResponses=true rejects non-string customer types via Zod", async () => {
+    const fetch = vi.fn(async () => bareArray([123, "Consumer"]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getSalesCustomerTypes()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("validateResponses=false (default) accepts non-string customer types without parsing", async () => {
+    const fetch = vi.fn(async () => bareArray([123, "Consumer"]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesCustomerTypes();
+    expect(result.length).toBe(2);
+  });
+
   it("validateResponses=true wraps non-Error throws into MetrcResponseError", async () => {
     const fetch = vi.fn(async () => okEnvelope([{}]) as unknown as Response);
     // Stub schema parse to throw a non-Error so the `instanceof Error` branch is exercised.

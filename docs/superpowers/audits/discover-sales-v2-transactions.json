@@ -1,0 +1,10 @@
+{
+  "endpoint": "/sales/v2/transactions",
+  "capturedAt": "2026-06-09T00:00:00Z",
+  "method": "GET",
+  "envelope": "n/a",
+  "naturalKey": null,
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "ERROR: HTTP 404 at the obvious URL. Five candidate alternatives also 404: /sales/v2/transactions/active, /sales/v2/transactions/{date}, /sales/transactions/v2/, /sales/v2/transaction, /sales/v2/salestransactions. The standalone transactions resource is not exposed on NY v2 today. Per-transaction data is available indirectly via getSalesReceiptById(id) - each receipt detail includes a populated Transactions[] array. Tracked as issue #16.",
+  "fieldTypes": {}
+}

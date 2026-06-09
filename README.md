@@ -16,7 +16,7 @@ Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The resource
 | packages | `/packages/v2/active`, `/packages/v2/inactive`, `/packages/v2/onhold`, `/packages/v2/types`, `/packages/v2/adjust/reasons`, `/packages/v2/{id}`, `/packages/v2/{label}` | complete | `/packages/v2/{id}/history` deferred — endpoint returned 404, see [issue #13](https://github.com/yerba-buena/metrc-ny-client/issues/13). |
 | locations | `/locations/v2/active` | partial | Types planned. |
 | items | `/items/v2/active`, `/items/v2/categories` | complete | First resource family at full coverage. |
-| sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}` | partial | Transactions, customer types planned. |
+| sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}`, `/sales/v2/customertypes` | partial | `/sales/v2/transactions` deferred — endpoint returned 404 at five candidate URLs, see [issue #16](https://github.com/yerba-buena/metrc-ny-client/issues/16). Per-transaction data is still available indirectly via `getSalesReceiptById(id).Transactions`. |
 | strains | — | planned | |
 | labtests | — | planned | |
 | plants | — | out-of-scope-for-now | Requires cultivator license. See [issue](#roadmap). |

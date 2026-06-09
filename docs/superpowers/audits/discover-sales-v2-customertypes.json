@@ -1,0 +1,11 @@
+{
+  "endpoint": "/sales/v2/customertypes",
+  "capturedAt": "2026-06-09T00:00:00Z",
+  "method": "GET",
+  "envelope": "bare-array",
+  "totalRecords": 5,
+  "naturalKey": null,
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "Bare array of 5 string customer-type labels. Same shape pattern as /packages/v2/types from P2 - reuses the requestArray<string>() transport variant.",
+  "fieldTypes": {}
+}
