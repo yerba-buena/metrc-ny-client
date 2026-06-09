@@ -90,4 +90,7 @@ export interface MetrcClient {
 
   /** API: GET /sales/v2/receipts/{id} */
   getSalesReceiptById(id: number): Promise<MetrcSalesReceiptDetail>;
+
+  /** API: GET /sales/v2/customertypes */
+  getSalesCustomerTypes(): Promise<string[]>;
 }

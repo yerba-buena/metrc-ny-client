@@ -48,6 +48,7 @@ function makeLiveClientFromFixtures(
   salesReceipts: MetrcSalesReceipt[],
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
   itemCategories: MetrcItemCategory[],
+  salesCustomerTypes: string[],
 ): MetrcClient {
   const fetch = vi.fn(async (url: string) => {
     if (url.includes("/items/v2/categories")) return okEnvelope(itemCategories) as unknown as Response;
@@ -59,6 +60,7 @@ function makeLiveClientFromFixtures(
     if (url.includes("/packages/v2/onhold")) return okEnvelope(onHoldPackages) as unknown as Response;
     if (url.includes("/packages/v2/active")) return okEnvelope(activePackages) as unknown as Response;
     if (url.includes("/items/v2/active")) return okEnvelope(items) as unknown as Response;
+    if (url.includes("/sales/v2/customertypes")) return bareArray(salesCustomerTypes) as unknown as Response;
     if (url.includes("/sales/v2/receipts/active")) return okEnvelope(salesReceipts) as unknown as Response;
     const receiptDetailMatch = url.match(/\/sales\/v2\/receipts\/(\d+)(?:\?|$)/);
     if (receiptDetailMatch) {
@@ -118,6 +120,7 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.salesReceipts,
     fixtures.salesReceiptDetailsById,
     fixtures.itemCategories,
+    fixtures.salesCustomerTypes,
   )],
 ];
 
@@ -188,6 +191,13 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     expect(() => metrcSalesReceiptDetailSchema.parse(detail)).not.toThrow();
     expect(detail.Id).toBe(knownId);
     expect(detail.Transactions.length).toBeGreaterThan(0);
+  });
+
+  it("getSalesCustomerTypes returns a bare array of strings", async () => {
+    const client = makeClient();
+    const result = await client.getSalesCustomerTypes();
+    expect(result.length).toBe(fixtures.salesCustomerTypes.length);
+    for (const t of result) expect(typeof t).toBe("string");
   });
 
   it("getInactivePackages returns packages that parse as MetrcActivePackage", async () => {

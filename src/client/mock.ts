@@ -21,6 +21,7 @@ export interface MockFixtures {
   salesReceipts: MetrcSalesReceipt[];
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
   itemCategories: MetrcItemCategory[];
+  salesCustomerTypes: string[];
 }
 
 const DEFAULT_TRANSFER: MetrcTransfer = {
@@ -403,6 +404,8 @@ const DEFAULT_RECEIPT_DETAIL_7001: MetrcSalesReceiptDetail = {
   Transactions: [DEFAULT_SALES_TRANSACTION],
 };
 
+const DEFAULT_SALES_CUSTOMER_TYPES: string[] = ["Consumer", "PatientLicense", "CaregiverLicense"];
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   packagesByDeliveryId: { 1001: [DEFAULT_PACKAGE_A, DEFAULT_PACKAGE_B] },
@@ -418,6 +421,7 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   salesReceipts: [DEFAULT_RECEIPT_LIST_ENTRY],
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
   itemCategories: [DEFAULT_ITEM_CATEGORY_FLOWER, DEFAULT_ITEM_CATEGORY_PREROLL],
+  salesCustomerTypes: DEFAULT_SALES_CUSTOMER_TYPES,
 };
 
 export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXTURES): MetrcClient {
@@ -478,6 +482,9 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
         throw new Error(`mock: no sales receipt fixture for id ${id}`);
       }
       return { ...detail, Transactions: [...detail.Transactions] };
+    },
+    async getSalesCustomerTypes(): Promise<string[]> {
+      return [...fixtures.salesCustomerTypes];
     },
   };
 }

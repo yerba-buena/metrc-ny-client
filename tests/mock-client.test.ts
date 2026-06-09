@@ -53,6 +53,7 @@ describe("createMockMetrcClient", () => {
       salesReceipts: [],
       salesReceiptDetailsById: {},
       itemCategories: [],
+      salesCustomerTypes: [],
     };
     const client = createMockMetrcClient(fixtures);
     expect(await client.getIncomingTransfers()).toEqual([]);
@@ -166,6 +167,21 @@ describe("createMockMetrcClient", () => {
   it("getSalesReceiptById throws for an unknown receipt id", async () => {
     const client = createMockMetrcClient();
     await expect(client.getSalesReceiptById(999999)).rejects.toThrow(/no sales receipt fixture/);
+  });
+
+  it("default sales customer types are non-empty and each is a string", async () => {
+    const client = createMockMetrcClient();
+    const types = await client.getSalesCustomerTypes();
+    expect(types.length).toBeGreaterThan(0);
+    for (const t of types) expect(typeof t).toBe("string");
+  });
+
+  it("getSalesCustomerTypes returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getSalesCustomerTypes();
+    const b = await client.getSalesCustomerTypes();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
   });
 
   it("default inactive packages parse against the Zod schema", async () => {
