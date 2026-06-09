@@ -1,0 +1,27 @@
+{
+  "endpoint": "/transfers/v2/types",
+  "capturedAt": "2026-06-09T00:00:00Z",
+  "method": "GET",
+  "envelope": "paginated",
+  "totalRecords": 5,
+  "naturalKey": "Name",
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "PAGINATED with object rows (NOT a bare-array of strings like /packages/v2/types and /sales/v2/customertypes). Each row is a structured object with Name + TransactionType + a bag of capability/requires booleans. Needs a new metrcTransferTypeSchema (strict, no passthrough - the audit captured all observed fields).",
+  "fieldTypes": {
+    "Name": "string",
+    "TransactionType": "string",
+    "BypassApproval": "boolean",
+    "ExternalIncomingCanRecordExternalIdentifier": "boolean",
+    "ExternalIncomingExternalIdentifierRequired": "boolean",
+    "ExternalOutgoingCanRecordExternalIdentifier": "boolean",
+    "ExternalOutgoingExternalIdentifierRequired": "boolean",
+    "ForExternalIncomingShipments": "boolean",
+    "ForExternalOutgoingShipments": "boolean",
+    "ForLicensedShipments": "boolean",
+    "RequiresDestinationGrossWeight": "boolean",
+    "RequiresInvoiceNumber": "boolean",
+    "RequiresPDFDocument": "boolean",
+    "RequiresPackagesGrossWeight": "boolean",
+    "RequiresVehicleRegistrationNumber": "boolean"
+  }
+}
