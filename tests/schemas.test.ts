@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcPackageSchema, metrcDeliverySchema,
   metrcLocationSchema, metrcActivePackageSchema, metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema, metrcItemCategorySchema,
@@ -376,5 +376,71 @@ describe("metrcItemCategorySchema", () => {
   it("rejects a category with wrong type on CanContainSeeds", () => {
     const bad = { ...sampleItemCategory, CanContainSeeds: "not-a-bool" };
     expect(() => metrcItemCategorySchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleOutgoingTransfer = {
+  Id: 2,
+  ManifestNumber: "M-OUT-1",
+  ShipmentLicenseType: "Adult Use",
+  ShipperFacilityLicenseNumber: "OCM-CAURD-1",
+  ShipperFacilityName: "Test Dispensary",
+  RecipientFacilityLicenseNumber: null,
+  RecipientFacilityName: null,
+  TransporterFacilityLicenseNumber: null,
+  TransporterFacilityName: null,
+  DriverName: null,
+  DriverOccupationalLicenseNumber: null,
+  DriverVehicleLicenseNumber: null,
+  VehicleMake: null,
+  VehicleModel: null,
+  VehicleLicensePlateNumber: null,
+  VehicleRegistrationNumber: null,
+  DeliveryId: 2001,
+  DeliveryCount: 1,
+  ReceivedDeliveryCount: 0,
+  PackageCount: 1,
+  ReceivedPackageCount: 0,
+  DeliveryPackageCount: 1,
+  DeliveryReceivedPackageCount: 0,
+  InvoiceNumber: null,
+  IsVoided: false,
+  Name: null,
+  OriginatingTemplateId: null,
+  ShipmentTypeName: null,
+  ShipmentTransactionType: null,
+  ContainsPlantPackage: false,
+  ContainsProductPackage: true,
+  ContainsTradeSample: false,
+  ContainsDonation: false,
+  ContainsTestingSample: false,
+  ContainsProductRequiresRemediation: false,
+  ContainsRemediatedProductPackage: false,
+  ContainsPreTreatedProductPackage: false,
+  CreatedDateTime: "2026-05-01T10:00:00Z",
+  CreatedByUserName: "test-user",
+  LastModified: "2026-05-01T10:00:00Z",
+  EstimatedDepartureDateTime: "2026-05-01T08:00:00Z",
+  ActualDepartureDateTime: null,
+  EstimatedArrivalDateTime: "2026-05-01T14:00:00Z",
+  ActualArrivalDateTime: null,
+  ReceivedDateTime: null,
+  EstimatedReturnDepartureDateTime: null,
+  ActualReturnDepartureDateTime: null,
+  EstimatedReturnArrivalDateTime: null,
+  ActualReturnArrivalDateTime: null,
+};
+
+describe("metrcOutgoingTransferSchema", () => {
+  it("parses a well-formed outgoing transfer", () => {
+    expect(() => metrcOutgoingTransferSchema.parse(sampleOutgoingTransfer)).not.toThrow();
+  });
+  it("rejects an outgoing transfer missing ManifestNumber", () => {
+    const bad = { ...sampleOutgoingTransfer, ManifestNumber: undefined };
+    expect(() => metrcOutgoingTransferSchema.parse(bad)).toThrow();
+  });
+  it("rejects an outgoing transfer with wrong type on IsVoided", () => {
+    const bad = { ...sampleOutgoingTransfer, IsVoided: "not-a-bool" };
+    expect(() => metrcOutgoingTransferSchema.parse(bad)).toThrow();
   });
 });

@@ -4,12 +4,12 @@ import { createMockMetrcClient, DEFAULT_MOCK_FIXTURES } from "../src/client/mock
 import { NOOP_LOGGER } from "../src/logger.js";
 import type { MetrcClient } from "../src/client/interface.js";
 import type {
-  MetrcTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
 } from "../src/schemas/index.js";
 import {
-  metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
@@ -35,6 +35,8 @@ const bareArray = (data: unknown[]) =>
 
 function makeLiveClientFromFixtures(
   transfers: MetrcTransfer[],
+  outgoingTransfers: MetrcOutgoingTransfer[],
+  rejectedTransfers: MetrcOutgoingTransfer[],
   packagesByDeliveryId: Record<number, MetrcPackage[]>,
   locations: MetrcLocation[],
   activePackages: MetrcActivePackage[],
@@ -54,6 +56,8 @@ function makeLiveClientFromFixtures(
     if (url.includes("/items/v2/categories")) return okEnvelope(itemCategories) as unknown as Response;
     if (url.includes("/packages/v2/types")) return bareArray(packageTypes) as unknown as Response;
     if (url.includes("/packages/v2/adjust/reasons")) return okEnvelope(packageAdjustReasons) as unknown as Response;
+    if (url.includes("/transfers/v2/outgoing")) return okEnvelope(outgoingTransfers) as unknown as Response;
+    if (url.includes("/transfers/v2/rejected")) return okEnvelope(rejectedTransfers) as unknown as Response;
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
     if (url.includes("/locations/v2/active")) return okEnvelope(locations) as unknown as Response;
     if (url.includes("/packages/v2/inactive")) return okEnvelope(inactivePackages) as unknown as Response;
@@ -107,6 +111,8 @@ const variants: Array<[string, () => MetrcClient]> = [
   ["mock", () => createMockMetrcClient(fixtures)],
   ["live (with stubbed fetch)", () => makeLiveClientFromFixtures(
     fixtures.transfers,
+    fixtures.outgoingTransfers,
+    fixtures.rejectedTransfers,
     fixtures.packagesByDeliveryId,
     fixtures.locations,
     fixtures.activePackages,
@@ -250,5 +256,19 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const result = await client.getItemCategories();
     expect(result.length).toBe(fixtures.itemCategories.length);
     for (const c of result) expect(() => metrcItemCategorySchema.parse(c)).not.toThrow();
+  });
+
+  it("getOutgoingTransfers returns transfers that parse as MetrcOutgoingTransfer", async () => {
+    const client = makeClient();
+    const result = await client.getOutgoingTransfers();
+    expect(result.length).toBe(fixtures.outgoingTransfers.length);
+    for (const t of result) expect(() => metrcOutgoingTransferSchema.parse(t)).not.toThrow();
+  });
+
+  it("getRejectedTransfers returns transfers that parse as MetrcOutgoingTransfer", async () => {
+    const client = makeClient();
+    const result = await client.getRejectedTransfers();
+    expect(result.length).toBe(fixtures.rejectedTransfers.length);
+    for (const t of result) expect(() => metrcOutgoingTransferSchema.parse(t)).not.toThrow();
   });
 });
