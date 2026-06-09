@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createMockMetrcClient, type MockFixtures, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import {
-  metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
@@ -40,6 +40,9 @@ describe("createMockMetrcClient", () => {
   it("override fixtures replace the defaults entirely", async () => {
     const fixtures: MockFixtures = {
       transfers: [],
+      outgoingTransfers: [],
+      rejectedTransfers: [],
+      transferTypes: [],
       packagesByDeliveryId: {},
       locations: [],
       activePackages: [],
@@ -57,6 +60,9 @@ describe("createMockMetrcClient", () => {
     };
     const client = createMockMetrcClient(fixtures);
     expect(await client.getIncomingTransfers()).toEqual([]);
+    expect(await client.getOutgoingTransfers()).toEqual([]);
+    expect(await client.getRejectedTransfers()).toEqual([]);
+    expect(await client.getTransferTypes()).toEqual([]);
     expect(await client.getDeliveriesWithPackages()).toEqual([]);
     expect(await client.getActiveLocations()).toEqual([]);
     expect(await client.getActivePackages()).toEqual([]);
@@ -282,6 +288,43 @@ describe("createMockMetrcClient", () => {
     const client = createMockMetrcClient();
     const a = await client.getItemCategories();
     const b = await client.getItemCategories();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default outgoing transfers parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const outgoing = await client.getOutgoingTransfers();
+    for (const t of outgoing) expect(() => metrcOutgoingTransferSchema.parse(t)).not.toThrow();
+  });
+
+  it("getOutgoingTransfers returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getOutgoingTransfers();
+    const b = await client.getOutgoingTransfers();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default rejected transfers is empty but returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getRejectedTransfers();
+    const b = await client.getRejectedTransfers();
+    expect(a.length).toBe(0);
+    expect(b.length).toBe(0);
+    expect(a).not.toBe(b);
+  });
+
+  it("default transfer types parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const types = await client.getTransferTypes();
+    for (const t of types) expect(() => metrcTransferTypeSchema.parse(t)).not.toThrow();
+  });
+
+  it("getTransferTypes returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getTransferTypes();
+    const b = await client.getTransferTypes();
     expect(a).toEqual(b);
     expect(a).not.toBe(b);
   });

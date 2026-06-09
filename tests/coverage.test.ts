@@ -15,13 +15,31 @@ describe("CLIENT_COVERAGE", () => {
     ]));
   });
 
-  it("declares /transfers/v2/incoming as complete and tied to getIncomingTransfers", () => {
+  it("declares all four implemented transfers endpoints as complete", () => {
     const transfers = CLIENT_COVERAGE.find((r) => r.resource === "transfers")!;
-    const incoming = transfers.endpoints.find((e) => e.path === "/transfers/v2/incoming");
-    expect(incoming).toBeDefined();
-    expect(incoming!.method).toBe("GET");
-    expect(incoming!.clientMethod).toBe("getIncomingTransfers");
-    expect(incoming!.status).toBe("complete");
+    const byPath = Object.fromEntries(transfers.endpoints.map(e => [e.path, e]));
+    expect(byPath["/transfers/v2/incoming"]?.status).toBe("complete");
+    expect(byPath["/transfers/v2/incoming"]?.clientMethod).toBe("getIncomingTransfers");
+    expect(byPath["/transfers/v2/deliveries/{id}/packages"]?.status).toBe("complete");
+    expect(byPath["/transfers/v2/deliveries/{id}/packages"]?.clientMethod).toBe("getPackagesForDelivery");
+    expect(byPath["/transfers/v2/outgoing"]?.status).toBe("complete");
+    expect(byPath["/transfers/v2/outgoing"]?.clientMethod).toBe("getOutgoingTransfers");
+    expect(byPath["/transfers/v2/rejected"]?.status).toBe("complete");
+    expect(byPath["/transfers/v2/rejected"]?.clientMethod).toBe("getRejectedTransfers");
+    expect(byPath["/transfers/v2/types"]?.status).toBe("complete");
+    expect(byPath["/transfers/v2/types"]?.clientMethod).toBe("getTransferTypes");
+  });
+
+  it("marks /transfers/v2/{id} as out-of-scope-for-now (METRC returned 404 at every candidate URL)", () => {
+    const transfers = CLIENT_COVERAGE.find((r) => r.resource === "transfers")!;
+    const byId = transfers.endpoints.find((e) => e.path === "/transfers/v2/{id}");
+    expect(byId?.status).toBe("out-of-scope-for-now");
+    expect(byId?.clientMethod).toBeNull();
+  });
+
+  it("keeps transfers resource status as partial while {id} is unresolved", () => {
+    const transfers = CLIENT_COVERAGE.find((r) => r.resource === "transfers")!;
+    expect(transfers.status).toBe("partial");
   });
 
   it("lists getDeliveriesWithPackages as a transfers-resource helper composing two API methods", () => {

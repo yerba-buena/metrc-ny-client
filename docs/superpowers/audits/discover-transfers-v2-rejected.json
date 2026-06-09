@@ -1,0 +1,11 @@
+{
+  "endpoint": "/transfers/v2/rejected",
+  "capturedAt": "2026-06-09T00:00:00Z",
+  "method": "GET",
+  "envelope": "paginated",
+  "totalRecords": 0,
+  "naturalKey": "Id",
+  "lastModifiedQuirkCheck": "OK (trivially - 0 rows)",
+  "notes": "License had 0 rejected transfers so the LastModified-quirk could not be conclusively measured AND the row shape is not directly observable. Apply wide-window pattern defensively (matches the precedent set by /packages/v2/onhold in P2). For schema reuse, expect rejected-transfer rows to share most of the outgoing-transfer shape with additional rejection-related fields (RejectorFacility*, RejectionDate, RejectionReason). Use metrcOutgoingTransferSchema with .passthrough() so any rejected-specific fields don't fail validation; bump to a dedicated schema later if differences become significant.",
+  "fieldTypes": {}
+}

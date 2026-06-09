@@ -3,13 +3,13 @@ import { createRequester } from "../transport/request.js";
 import { requestArray } from "../transport/request-array.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
 import {
-  metrcTransferSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema,
 } from "../schemas/index.js";
 import type {
-  MetrcTransfer, MetrcPackage, DeliveryWithPackages,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory,
@@ -89,6 +89,57 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
         endpoint,
       );
       return validateArray(metrcTransferSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /transfers/v2/outgoing (LastModified-quirk)
+     *
+     * Phase 4 audit
+     * (docs/superpowers/audits/discover-transfers-v2-outgoing.json)
+     * confirmed bare 1 vs windowed 7 — same partial-quirk pattern as
+     * /transfers/v2/incoming. Pass a wide window. Schema is
+     * metrcOutgoingTransferSchema (NOT metrcTransferSchema — outgoing has
+     * extra fields and different nullability).
+     */
+    async getOutgoingTransfers(): Promise<MetrcOutgoingTransfer[]> {
+      const endpoint = "/transfers/v2/outgoing";
+      const data = await fetchAllPages<MetrcOutgoingTransfer>(
+        paged<MetrcOutgoingTransfer>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcOutgoingTransferSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /transfers/v2/rejected (LastModified-quirk)
+     *
+     * License had 0 rejected transfers in the Phase 4 audit
+     * (docs/superpowers/audits/discover-transfers-v2-rejected.json),
+     * so the quirk verdict and exact row shape could not be conclusively
+     * measured. Apply wide-window defensively (same as /packages/v2/onhold
+     * from P2). Reuses metrcOutgoingTransferSchema with .passthrough()
+     * for any rejected-specific fields.
+     */
+    async getRejectedTransfers(): Promise<MetrcOutgoingTransfer[]> {
+      const endpoint = "/transfers/v2/rejected";
+      const data = await fetchAllPages<MetrcOutgoingTransfer>(
+        paged<MetrcOutgoingTransfer>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcOutgoingTransferSchema, data, endpoint);
+    },
+
+    /** API: GET /transfers/v2/types */
+    async getTransferTypes(): Promise<MetrcTransferType[]> {
+      const endpoint = "/transfers/v2/types";
+      const data = await fetchAllPages<MetrcTransferType>(paged<MetrcTransferType>(endpoint), endpoint);
+      return validateArray(metrcTransferTypeSchema, data, endpoint);
     },
 
     /** API: GET /transfers/v2/deliveries/{deliveryId}/packages */

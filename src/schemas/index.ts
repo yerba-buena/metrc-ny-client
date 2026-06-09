@@ -1,4 +1,6 @@
 export * from "./transfer.js";
+export * from "./outgoing-transfer.js";
+export * from "./transfer-type.js";
 export * from "./package.js";
 export * from "./delivery.js";
 export * from "./location.js";

@@ -1,6 +1,6 @@
 // src/index.ts
 export {
-  metrcTransferSchema, metrcPackageSchema, metrcDeliverySchema,
+  metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcDeliverySchema,
   deliveryWithPackagesSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
@@ -8,7 +8,7 @@ export {
 } from "./schemas/index.js";
 
 export type {
-  MetrcTransfer, MetrcPackage, MetrcDelivery, DeliveryWithPackages,
+  MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, MetrcDelivery, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail, MetrcSalesTransaction,
   MetrcItemCategory,

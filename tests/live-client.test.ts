@@ -42,6 +42,49 @@ const fakePackage = (id: number) => ({
   ReceivedQuantity: null, ReceivedDateTime: null,
 });
 
+const fakeOutgoingTransfer = (id: number) => ({
+  Id: id, ManifestNumber: `M-OUT-${id}`, ShipmentLicenseType: "AU",
+  ShipperFacilityLicenseNumber: "OCM-CAURD-1", ShipperFacilityName: "Disp",
+  RecipientFacilityLicenseNumber: null, RecipientFacilityName: null,
+  TransporterFacilityLicenseNumber: null, TransporterFacilityName: null,
+  DriverName: null, DriverOccupationalLicenseNumber: null, DriverVehicleLicenseNumber: null,
+  VehicleMake: null, VehicleModel: null, VehicleLicensePlateNumber: null,
+  VehicleRegistrationNumber: null,
+  DeliveryId: 2000 + id, DeliveryCount: 1, ReceivedDeliveryCount: 0,
+  PackageCount: 1, ReceivedPackageCount: 0, DeliveryPackageCount: 1, DeliveryReceivedPackageCount: 0,
+  InvoiceNumber: null, IsVoided: false, Name: null, OriginatingTemplateId: null,
+  ShipmentTypeName: null, ShipmentTransactionType: null,
+  ContainsPlantPackage: false, ContainsProductPackage: true, ContainsTradeSample: false,
+  ContainsDonation: false, ContainsTestingSample: false,
+  ContainsProductRequiresRemediation: false, ContainsRemediatedProductPackage: false,
+  ContainsPreTreatedProductPackage: false,
+  CreatedDateTime: "2026-05-01T10:00:00Z", CreatedByUserName: null,
+  LastModified: "2026-05-01T10:00:00Z",
+  EstimatedDepartureDateTime: "2026-05-01T08:00:00Z", ActualDepartureDateTime: null,
+  EstimatedArrivalDateTime: "2026-05-01T14:00:00Z", ActualArrivalDateTime: null,
+  ReceivedDateTime: null, EstimatedReturnDepartureDateTime: null,
+  ActualReturnDepartureDateTime: null, EstimatedReturnArrivalDateTime: null,
+  ActualReturnArrivalDateTime: null,
+});
+
+const fakeTransferType = (name: string) => ({
+  Name: name,
+  TransactionType: "Standard",
+  BypassApproval: false,
+  ExternalIncomingCanRecordExternalIdentifier: false,
+  ExternalIncomingExternalIdentifierRequired: false,
+  ExternalOutgoingCanRecordExternalIdentifier: false,
+  ExternalOutgoingExternalIdentifierRequired: false,
+  ForExternalIncomingShipments: false,
+  ForExternalOutgoingShipments: false,
+  ForLicensedShipments: true,
+  RequiresDestinationGrossWeight: false,
+  RequiresInvoiceNumber: false,
+  RequiresPDFDocument: false,
+  RequiresPackagesGrossWeight: false,
+  RequiresVehicleRegistrationNumber: false,
+});
+
 const okEnvelope = (data: unknown[]) => ({
   ok: true, status: 200,
   headers: new Headers(),
@@ -88,6 +131,56 @@ describe("createLiveMetrcClient", () => {
     expect(capturedUrl).toContain("/transfers/v2/deliveries/100/packages");
     expect(result.length).toBe(1);
     expect(result[0]!.PackageId).toBe(9001);
+  });
+
+  it("getOutgoingTransfers calls /transfers/v2/outgoing with wide-window params", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeOutgoingTransfer(1), fakeOutgoingTransfer(2)]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getOutgoingTransfers();
+    expect(capturedUrl).toContain("/transfers/v2/outgoing");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
+    expect(result.length).toBe(2);
+    expect(result[0]!.Id).toBe(1);
+  });
+
+  it("getRejectedTransfers calls /transfers/v2/rejected with wide-window params", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getRejectedTransfers();
+    expect(capturedUrl).toContain("/transfers/v2/rejected");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01T00%3A00%3A00Z");
+    expect(capturedUrl).toContain("lastModifiedEnd=");
+    expect(result.length).toBe(0);
+  });
+
+  it("getOutgoingTransfers rejects on validateResponses failure", async () => {
+    const fetch = vi.fn(async () => {
+      return okEnvelope([{ Id: "not-a-number", ManifestNumber: "M-1" }]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getOutgoingTransfers()).rejects.toThrow(MetrcResponseError);
+  });
+
+  it("getTransferTypes calls /transfers/v2/types and returns paginated objects", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeTransferType("Wholesale Manifest"), fakeTransferType("Returns")]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getTransferTypes();
+    expect(capturedUrl).toContain("/transfers/v2/types");
+    expect(result.length).toBe(2);
+    expect(result[0]!.Name).toBe("Wholesale Manifest");
   });
 
   it("getDeliveriesWithPackages combines transfers with their packages", async () => {

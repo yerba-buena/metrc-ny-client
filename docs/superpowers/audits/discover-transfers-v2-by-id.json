@@ -1,0 +1,10 @@
+{
+  "endpoint": "/transfers/v2/{id}",
+  "capturedAt": "2026-06-09T00:00:00Z",
+  "method": "GET",
+  "envelope": "n/a",
+  "naturalKey": null,
+  "lastModifiedQuirkCheck": "N/A",
+  "notes": "ERROR: HTTP 404 at all five candidate URLs probed: /transfers/v2/{id}, /transfers/v2/incoming/{id}, /transfers/v2/outgoing/{id}, /transfers/v2/deliveries/{id}, /transfers/v2 with id as query param. The standalone by-id transfer resource is not exposed on NY v2 today. Filed as a separate roadmap issue for URL investigation. Workaround: list /transfers/v2/{incoming,outgoing,rejected} with a tight LastModified window and filter client-side.",
+  "fieldTypes": {}
+}
