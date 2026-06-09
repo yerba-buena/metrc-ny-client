@@ -48,18 +48,27 @@ describe("CLIENT_COVERAGE", () => {
     expect(items.status).toBe("complete");
   });
 
-  it("declares sales receipts list+detail complete, /sales/v2/transactions and /sales/v2/customertypes planned", () => {
+  it("declares sales receipts list, detail, and customertypes endpoints as complete", () => {
     const sales = CLIENT_COVERAGE.find((r) => r.resource === "sales")!;
-    const receiptsActive = sales.endpoints.find((e) => e.path === "/sales/v2/receipts/active");
-    const receiptById = sales.endpoints.find((e) => e.path === "/sales/v2/receipts/{id}");
-    const txns = sales.endpoints.find((e) => e.path === "/sales/v2/transactions");
-    const customers = sales.endpoints.find((e) => e.path === "/sales/v2/customertypes");
-    expect(receiptsActive?.status).toBe("complete");
-    expect(receiptsActive?.clientMethod).toBe("getActiveSalesReceipts");
-    expect(receiptById?.status).toBe("complete");
-    expect(receiptById?.clientMethod).toBe("getSalesReceiptById");
-    expect(txns?.status).toBe("planned");
-    expect(customers?.status).toBe("planned");
+    const byPath = Object.fromEntries(sales.endpoints.map(e => [e.path, e]));
+    expect(byPath["/sales/v2/receipts/active"]?.status).toBe("complete");
+    expect(byPath["/sales/v2/receipts/active"]?.clientMethod).toBe("getActiveSalesReceipts");
+    expect(byPath["/sales/v2/receipts/{id}"]?.status).toBe("complete");
+    expect(byPath["/sales/v2/receipts/{id}"]?.clientMethod).toBe("getSalesReceiptById");
+    expect(byPath["/sales/v2/customertypes"]?.status).toBe("complete");
+    expect(byPath["/sales/v2/customertypes"]?.clientMethod).toBe("getSalesCustomerTypes");
+  });
+
+  it("marks /sales/v2/transactions as out-of-scope-for-now (METRC returned 404 in discovery)", () => {
+    const sales = CLIENT_COVERAGE.find((r) => r.resource === "sales")!;
+    const transactions = sales.endpoints.find((e) => e.path === "/sales/v2/transactions");
+    expect(transactions?.status).toBe("out-of-scope-for-now");
+    expect(transactions?.clientMethod).toBeNull();
+  });
+
+  it("keeps sales resource status as partial while transactions is unresolved", () => {
+    const sales = CLIENT_COVERAGE.find((r) => r.resource === "sales")!;
+    expect(sales.status).toBe("partial");
   });
 
   it("uses only the four allowed status values", () => {

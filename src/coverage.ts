@@ -83,8 +83,8 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
     endpoints: [
       { path: "/sales/v2/receipts/active", method: "GET" as const, clientMethod: "getActiveSalesReceipts", status: "complete" as const },
       { path: "/sales/v2/receipts/{id}", method: "GET" as const, clientMethod: "getSalesReceiptById", status: "complete" as const },
-      { path: "/sales/v2/transactions", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/customertypes", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/sales/v2/transactions", method: "GET" as const, clientMethod: null, status: "out-of-scope-for-now" as const },
+      { path: "/sales/v2/customertypes", method: "GET" as const, clientMethod: "getSalesCustomerTypes", status: "complete" as const },
     ] as const,
   } as const),
   Object.freeze({
