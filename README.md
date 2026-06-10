@@ -8,22 +8,33 @@ TypeScript client for the METRC NY v2 API. Started as a dispensary-focused subse
 
 ## Coverage
 
-Source of truth: the [`CLIENT_COVERAGE`](src/coverage.ts) constant. The resource rows of the table below mirror it; the final `writes` row is an editorial note about a category deferred wholesale rather than per-endpoint.
+Source of truth: [`src/coverage.ts`](src/coverage.ts) (`CLIENT_COVERAGE`). The table below shows one row per resource family. The "Endpoints implemented" column lists only the complete endpoints — see [`src/coverage.ts`](src/coverage.ts) for the full list of planned and out-of-scope entries.
 
 | Resource | Endpoints implemented | Status | Notes |
 |---|---|---|---|
-| transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages`, `/transfers/v2/outgoing`, `/transfers/v2/rejected`, `/transfers/v2/types` | partial | `/transfers/v2/{id}` deferred — endpoint returned 404 at every candidate URL, see [issue #18](https://github.com/yerba-buena/metrc-ny-client/issues/18). |
-| packages | `/packages/v2/active`, `/packages/v2/inactive`, `/packages/v2/onhold`, `/packages/v2/types`, `/packages/v2/adjust/reasons`, `/packages/v2/{id}`, `/packages/v2/{label}` | complete | `/packages/v2/{id}/history` deferred — endpoint returned 404, see [issue #13](https://github.com/yerba-buena/metrc-ny-client/issues/13). |
-| locations | `/locations/v2/active` | partial | Types planned. |
-| items | `/items/v2/active`, `/items/v2/categories` | complete | First resource family at full coverage. |
-| sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}`, `/sales/v2/customertypes` | partial | `/sales/v2/transactions` deferred — endpoint returned 404 at five candidate URLs, see [issue #16](https://github.com/yerba-buena/metrc-ny-client/issues/16). Per-transaction data is still available indirectly via `getSalesReceiptById(id).Transactions`. |
-| strains | — | planned | |
-| labtests | — | planned | |
-| plants | — | out-of-scope-for-now | Requires cultivator license. See [issue](#roadmap). |
-| plantbatches | — | out-of-scope-for-now | Requires cultivator license. |
-| harvests | — | out-of-scope-for-now | Requires cultivator license. |
-| waste | — | out-of-scope-for-now | Requires cultivator license. |
-| writes (POST/PUT/DELETE, any resource) | — | out-of-scope-for-now | Reads-first; separate spec planned. |
+| transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages`, `/transfers/v2/outgoing`, `/transfers/v2/rejected`, `/transfers/v2/types` | partial | 13 additional endpoints planned (Phase 8). See [`src/coverage.ts`](src/coverage.ts). |
+| packages | `/packages/v2/active`, `/packages/v2/inactive`, `/packages/v2/onhold`, `/packages/v2/types`, `/packages/v2/adjust/reasons`, `/packages/v2/{id}`, `/packages/v2/{label}` | partial | 5 additional endpoints planned (Phase 6), including `/packages/v2/adjustments`. See [`src/coverage.ts`](src/coverage.ts). |
+| locations | `/locations/v2/active` | partial | `/{id}`, `/inactive`, `/types` planned (Phase 5). |
+| sublocations | — | planned | Phase 5. See [`src/coverage.ts`](src/coverage.ts). |
+| items | `/items/v2/active`, `/items/v2/categories` | partial | 5 additional endpoints planned (Phase 9). See [`src/coverage.ts`](src/coverage.ts). |
+| strains | — | planned | Phase 5. See [`src/coverage.ts`](src/coverage.ts). |
+| sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}`, `/sales/v2/customertypes` | partial | 12 additional endpoints planned (Phase 7), including deliveries and retailer-delivery sub-family. `/sales/v2/transactions` removed — URL does not exist in METRC NY v2. See [`src/coverage.ts`](src/coverage.ts). |
+| labtests | — | planned | Phase 10. See [`src/coverage.ts`](src/coverage.ts). |
+| unitsofmeasure | — | planned | Phase 11. |
+| facilities | — | planned | Phase 11. |
+| employees | — | planned | Phase 11. |
+| tags | — | planned | Phase 11. |
+| wastemethods | — | planned | Phase 11. |
+| retailid | — | planned | Phase 12 (retail-specific). |
+| patients | — | out-of-scope-for-now | Medical marijuana program; adult-use retail license only. |
+| caregivers | — | out-of-scope-for-now | Medical marijuana program; adult-use retail license only. |
+| patient-checkins | — | out-of-scope-for-now | Medical marijuana program; adult-use retail license only. |
+| plants | — | out-of-scope-for-now | Cultivator-side. [Issue #2](https://github.com/yerba-buena/metrc-ny-client/issues/2). |
+| plantbatches | — | out-of-scope-for-now | Cultivator-side. [Issue #3](https://github.com/yerba-buena/metrc-ny-client/issues/3). |
+| harvests | — | out-of-scope-for-now | Cultivator-side. [Issue #4](https://github.com/yerba-buena/metrc-ny-client/issues/4). |
+| processing | — | out-of-scope-for-now | Cultivator-side processing jobs. |
+| additivestemplates | — | out-of-scope-for-now | Cultivator-side. |
+| writes (POST/PUT/DELETE, any resource) | — | out-of-scope-for-now | Reads-first; issues [#6](https://github.com/yerba-buena/metrc-ny-client/issues/6), [#7](https://github.com/yerba-buena/metrc-ny-client/issues/7), [#8](https://github.com/yerba-buena/metrc-ny-client/issues/8). |
 
 Status values: `complete` (every documented endpoint in the family is implemented and tested), `partial` (some endpoints implemented), `planned` (in the roadmap), `out-of-scope-for-now` (deferred; see linked issues).
 
@@ -91,13 +102,13 @@ These resources and operations are explicitly out of scope for the current phase
 - [Cultivator: plants](https://github.com/yerba-buena/metrc-ny-client/issues/2)
 - [Cultivator: plant batches](https://github.com/yerba-buena/metrc-ny-client/issues/3)
 - [Cultivator: harvests](https://github.com/yerba-buena/metrc-ny-client/issues/4)
-- [Cultivator: waste](https://github.com/yerba-buena/metrc-ny-client/issues/5)
+- [Cultivator: waste tracking](https://github.com/yerba-buena/metrc-ny-client/issues/5)
 - [Write: receive incoming transfer](https://github.com/yerba-buena/metrc-ny-client/issues/6)
 - [Write: create / adjust packages](https://github.com/yerba-buena/metrc-ny-client/issues/7)
 - [Write: record sales receipt](https://github.com/yerba-buena/metrc-ny-client/issues/8)
 - [Transporter facility endpoints](https://github.com/yerba-buena/metrc-ny-client/issues/9)
 
-See `docs/superpowers/specs/2026-05-24-comprehensive-metrc-ny-coverage-design.md` for the full phasing plan.
+See `docs/superpowers/specs/2026-05-24-comprehensive-metrc-ny-coverage-design.md` for the full phasing plan (updated 2026-06-10 with a comprehensive respec covering all ~24 METRC NY v2 resource families).
 
 ## Development
 
