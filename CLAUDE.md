@@ -24,7 +24,7 @@ const sales = CLIENT_COVERAGE.find((r) => r.resource === "sales");
 const completeEndpoints = sales?.endpoints.filter((e) => e.status === "complete");
 ```
 
-`CLIENT_COVERAGE` is the source of truth. README's Coverage table mirrors it.
+`CLIENT_COVERAGE` is the source of truth for the full endpoint enumeration (~24 resource families, all documented v2 GET endpoints). README's Coverage table mirrors it at the resource-family level; per-endpoint detail is in `src/coverage.ts`.
 
 ## Source of truth, in priority order
 
@@ -80,15 +80,22 @@ Red first; tests must be non-hollow (pin URLs, params, parsed return shapes). 90
 
 ## What is in scope vs. out of scope
 
-**In scope (planned, in progress, or done):** every documented METRC NY v2 GET endpoint relevant to the dispensary/retailer workflow. The spec and `CLIENT_COVERAGE` enumerate them. Phasing is in the spec doc.
+**In scope (planned, in progress, or done):** every documented METRC NY v2 GET endpoint relevant to the dispensary/retailer workflow. The spec and `CLIENT_COVERAGE` enumerate them. See `src/coverage.ts` for the authoritative full list across ~24 resource families. Phasing is in the spec doc (updated 2026-06-10).
 
 **Out of scope for now, tracked as roadmap issues:**
 
-- Cultivator-side resources: plants, plant batches, harvests, waste. Reason: we lack a cultivator license for live verification. Issues `#2`, `#3`, `#4`, `#5`.
-- Write operations (POST/PUT/DELETE) on any resource. Reason: read-only first. Issues `#6`, `#7`, `#8`.
+- Cultivator-side resources: plants, plant batches, harvests, processing, additivestemplates, and cultivator-side waste tracking. Reason: we lack a cultivator license for live verification. Issues `#2`, `#3`, `#4`, `#5`.
+- Write operations (POST/PUT/DELETE) on any resource. Reason: read-only first. Issues `#6`, `#7`, `#8`. Resources with documented writes are flagged `hasWrites: true` in `CLIENT_COVERAGE`.
+- Medical marijuana program endpoints: patients, caregivers, patient-checkins. Reason: adult-use retail license only.
 - Transporter-facility endpoints. Reason: not a transporter facility. Issue `#9`.
 
 If a request involves one of those areas, comment on the relevant issue rather than starting work.
+
+**Closed investigations (do not re-open):**
+
+- `/packages/v2/{id}/history` — URL confirmed not to exist. The actual history-like endpoint is `/packages/v2/adjustments` (live-confirmed, 956 records). Issue #13 closed.
+- `/sales/v2/transactions` — URL confirmed not to exist in METRC NY v2. Per-transaction data is available via `getSalesReceiptById(id).Transactions`. Issue #16 closed.
+- `/transfers/v2/{id}` — URL confirmed not to exist (no bare single-transfer endpoint). The conceptual replacement `/transfers/v2/{id}/deliveries` is planned for Phase 8.
 
 ## Common gotchas
 

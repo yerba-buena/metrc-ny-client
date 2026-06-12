@@ -273,5 +273,100 @@ Each issue body has: what the resource covers, why it's deferred (license-type o
 These are unknowns that `npm run discover` will answer when the relevant phase starts. They do not block spec approval or implementation planning.
 
 - Exact URL for package lookup by label, and for units-of-measure (METRC has minor URL drift between docs versions; confirm during P2 and P7 discovery respectively).
-- Whether `/packages/v2/{id}/history` is id-keyed or label-keyed in the current NY docs (confirm during P2 discovery).
+- Whether `/packages/v2/{id}/history` is id-keyed or label-keyed in the current NY docs (confirm during P2 discovery). **Resolved 2026-06-10:** URL does not exist; `/packages/v2/adjustments` is the live-confirmed replacement.
 - For each *paginated* endpoint not yet audited (`/packages/v2/active`, `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages`): whether it silently returns empty without a LastModified window, the same way `/locations/v2/active` and `/items/v2/active` do. P0 audits this and patches as needed.
+
+---
+
+## Respec — 2026-06-10
+
+**Status:** Approved. Supersedes the Phase 5–7 ladder in the original spec above. Everything in sections A–D (P0–P4) remains accurate and is not re-planned.
+
+### Why we paused to respec
+
+The original 2026-05-24 spec estimated the METRC NY v2 read surface as roughly 7–8 resource families. A full docs review on 2026-06-10 (post-P4, at commit `7171991`) revealed approximately 24 resource families with significantly more endpoints per family than estimated. The gap was large enough that proceeding without re-enumeration would have produced a misleading `CLIENT_COVERAGE` and phase ladder. This section captures the corrected picture.
+
+### Expanded surface findings
+
+The documented v2 GET surface breaks down as:
+
+| Resource family | Status in CLIENT_COVERAGE | GET endpoint count | Notes |
+|---|---|---|---|
+| transfers | partial | 18 | 5 complete; 13 planned (hub, templates, manifest PDF, transporter details) |
+| packages | partial | 12 | 7 complete; 5 planned (intransit, labsamples, adjustments, source/harvests, transferred) |
+| locations | partial | 4 | 1 complete; 3 planned |
+| sublocations | planned | 3 | New family, not in original spec |
+| items | partial | 7 | 2 complete; 5 planned ({id}, inactive, brands, photo, file) |
+| strains | planned | 3 | Was 2; inactive added |
+| sales | partial | 15 | 3 complete; 12 planned (deliveries family, receipts/inactive, counties, paymenttypes, etc.) |
+| labtests | planned | 5 | Was 4; batches and labtestdocument added |
+| unitsofmeasure | planned | 2 | New family |
+| facilities | planned | 1 | New family |
+| employees | planned | 2 | New family |
+| tags | planned | 3 | New family |
+| wastemethods | planned | 1 | New family (replaces old empty "waste" entry) |
+| retailid | planned | 3 | New family (retail-specific) |
+| patients | out-of-scope-for-now | 3 | Medical-program; adult-use license only |
+| caregivers | out-of-scope-for-now | 1 | Medical-program; adult-use license only |
+| patient-checkins | out-of-scope-for-now | 2 | Medical-program; adult-use license only |
+| plants | out-of-scope-for-now | 9 | Cultivator-side; endpoints now enumerated |
+| plantbatches | out-of-scope-for-now | 4 | Cultivator-side; endpoints now enumerated |
+| harvests | out-of-scope-for-now | 5 | Cultivator-side; endpoints now enumerated |
+| processing | out-of-scope-for-now | 4 | New cultivator-side family |
+| additivestemplates | out-of-scope-for-now | 3 | New cultivator-side family |
+
+The old `waste` entry (empty endpoints) is removed. Cultivator-side waste tracking is documented under `/plants/v2/waste/*` and `/harvests/v2/waste/types`, which are covered by the cultivator out-of-scope entries. The `wastemethods` resource (`/wastemethods/v2/`) is a separate reference-data endpoint and is planned.
+
+### Investigation items closed
+
+- **Issue #13** (`/packages/v2/{id}/history`): URL does not exist in the METRC NY v2 docs or live API. The conceptual replacement is `/packages/v2/adjustments`, which returned 956 records in a live probe. Entry removed from `CLIENT_COVERAGE`; `/packages/v2/adjustments` added as `planned` (Phase 6). Issue #13 closed.
+
+- **Issue #16** (`/sales/v2/transactions`): URL does not exist in METRC NY v2. The docs do not document this endpoint. Per-transaction data is accessible via `getSalesReceiptById(id).Transactions`. Entry removed from `CLIENT_COVERAGE` entirely (not carried as `out-of-scope-for-now` because the URL was wrong all along). Issue #16 closed.
+
+- **`/transfers/v2/{id}`**: URL does not exist (no bare single-transfer endpoint in the docs). The entry is removed from `CLIENT_COVERAGE`. The conceptual replacement `/transfers/v2/{id}/deliveries` is added as `planned` (Phase 8); the 401 returned during live probe is likely vendor/scope-restricted and is tracked as the open question for that phase.
+
+### Write operations
+
+All write operations (POST/PUT/DELETE) remain out-of-scope-for-now. Resources that have documented writes are flagged with `hasWrites: true` in `CLIENT_COVERAGE`. Existing issues #6 (transfers receive), #7 (packages create/adjust), #8 (sales record) cover the most common write surfaces; the flag on each resource entry makes it clear which families have more writes not yet tracked by a dedicated issue.
+
+### Medical-program endpoints out-of-scope confirmed
+
+`patients`, `caregivers`, and `patient-checkins` endpoints are adult-use-retail–irrelevant (they serve the NY medical marijuana program). This license is adult-use retail. All three are enumerated in `CLIENT_COVERAGE` as `out-of-scope-for-now` with a note. They may be re-scoped if YBAM ever holds a medical license.
+
+### Cultivator-side reaffirmed out-of-scope
+
+`plants`, `plantbatches`, `harvests`, `processing`, and `additivestemplates` are confirmed cultivator-side. Their endpoints are now enumerated in `CLIENT_COVERAGE` for completeness (rather than empty arrays), but all remain `out-of-scope-for-now`. Existing issues #2–#5 cover this. `processing` and `additivestemplates` are new families not previously tracked; they are grouped under the existing cultivator out-of-scope rationale.
+
+### Revised phase ladder (post-respec)
+
+The original P5–P7 above are replaced by this expanded ladder. P0–P4 are unchanged.
+
+**Phase 5 — Sublocations + Strains + Locations expansion.**
+Adds: `/sublocations/v2/active`, `/sublocations/v2/inactive`, `/sublocations/v2/{id}`, `/strains/v2/active`, `/strains/v2/inactive`, `/strains/v2/{id}`, `/locations/v2/types`, `/locations/v2/inactive`, `/locations/v2/{id}`. Combined because each is a small family.
+
+**Phase 6 — Packages expansion.**
+Adds: `/packages/v2/onhold` (if not complete), `/packages/v2/inactive` (if not complete), `/packages/v2/intransit`, `/packages/v2/labsamples`, `/packages/v2/types` (if not complete), `/packages/v2/adjust/reasons` (if not complete), `/packages/v2/adjustments`, `/packages/v2/{id}/source/harvests`, `/packages/v2/transferred`, `/packages/v2/{id}` (if not complete), `/packages/v2/{label}` (if not complete). Adds a `getPackageAdjustments(window)` method (paginated; likely LastModified-quirk, confirm via discover). Note: many of these may already be complete from P2; the phase finishes whatever remains.
+
+**Phase 7 — Sales expansion.**
+Adds: `/sales/v2/deliveries/active`, `/sales/v2/deliveries/inactive`, `/sales/v2/deliveries/{id}`, `/sales/v2/deliveries/returnreasons`, `/sales/v2/receipts/inactive`, `/sales/v2/receipts/external/{externalNumber}`, `/sales/v2/counties`, `/sales/v2/paymenttypes`, `/sales/v2/patientregistration/locations`, `/sales/v2/deliveries/retailer/active`, `/sales/v2/deliveries/retailer/inactive`, `/sales/v2/deliveries/retailer/{id}`.
+
+**Phase 8 — Transfers expansion.**
+Adds: `/transfers/v2/hub`, `/transfers/v2/{id}/deliveries` (resolve 401 — likely vendor/scope-restricted; see issue #18 or open a new one), `/transfers/v2/deliveries/{id}/transporters`, `/transfers/v2/deliveries/{id}/transporters/details`, `/transfers/v2/deliveries/{id}/packages/wholesale`, `/transfers/v2/deliveries/package/{id}/requiredlabtestbatches`, `/transfers/v2/deliveries/packages/states`, `/transfers/v2/templates/outgoing`, `/transfers/v2/templates/outgoing/{id}/deliveries`, `/transfers/v2/templates/outgoing/deliveries/{id}/transporters`, `/transfers/v2/templates/outgoing/deliveries/{id}/transporters/details`, `/transfers/v2/templates/outgoing/deliveries/{id}/packages`, `/transfers/v2/manifest/{id}/pdf` (binary response — needs a transport variant for non-JSON responses).
+
+**Phase 9 — Items expansion.**
+Adds: `/items/v2/{id}`, `/items/v2/inactive`, `/items/v2/brands`, `/items/v2/photo/{id}`, `/items/v2/file/{id}`. Note: photo/{id} and file/{id} return binary content — use the same transport variant needed for manifest PDF in Phase 8.
+
+**Phase 10 — Lab tests.**
+Adds: `/labtests/v2/states`, `/labtests/v2/batches`, `/labtests/v2/types`, `/labtests/v2/results`, `/labtests/v2/labtestdocument/{id}`.
+
+**Phase 11 — Reference data.**
+Adds: `/unitsofmeasure/v2/active`, `/unitsofmeasure/v2/inactive`, `/facilities/v2/`, `/employees/v2/`, `/employees/v2/permissions`, `/tags/v2/plant/available`, `/tags/v2/package/available`, `/tags/v2/staged`, `/wastemethods/v2/`.
+
+**Phase 12 — Retail ID.**
+Adds: `/retailid/v2/allotment`, `/retailid/v2/receive/{label}`, `/retailid/v2/receive/qr/{shortCode}`. Retail-specific functionality; confirm live behavior against the NY retail-ID program.
+
+**Phase 13 — npm publish (issue #15).**
+After P5–P11 land and the dispensary-relevant read surface is comprehensive.
+
+**Phase 14 — Out-of-scope catchups (per-need).**
+Medical-program endpoints (`patients`, `caregivers`, `patient-checkins`) if a need arises. Cultivator resources if a cultivator license becomes available.
