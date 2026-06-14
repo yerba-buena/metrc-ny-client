@@ -1,0 +1,92 @@
+{
+  "phase": 5,
+  "capturedAt": "2026-06-14T00:00:00Z",
+  "endpoints": {
+    "/strains/v2/active": {
+      "envelope": "paginated",
+      "totalRecords": 174,
+      "lastModifiedQuirkCheck": "QUIRKED",
+      "notes": "bare:0 windowed:174 - same partial-quirk pattern as /items/v2/active. Wide window required.",
+      "fieldTypes": {
+        "Id": "number",
+        "Name": "string",
+        "Genetics": "string",
+        "IndicaPercentage": "number",
+        "SativaPercentage": "number",
+        "CbdLevel": "null",
+        "ThcLevel": "number",
+        "TestingStatus": "string",
+        "IsUsed": "boolean"
+      }
+    },
+    "/strains/v2/inactive": {
+      "envelope": "paginated",
+      "totalRecords": 1,
+      "lastModifiedQuirkCheck": "INCONCLUSIVE (1 row windowed; bare not separately probed)",
+      "notes": "Same row shape as active. Apply wide window defensively.",
+      "fieldTypes": "(matches strains active)"
+    },
+    "/strains/v2/{id}": {
+      "envelope": "single-object",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Same shape as a strains-active row. Reuses metrcStrainSchema with validateOne.",
+      "fieldTypes": "(matches strains active)"
+    },
+    "/locations/v2/types": {
+      "envelope": "paginated",
+      "totalRecords": 1,
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Lookup table. Shape distinct from metrcLocationSchema - this is the LOCATION TYPE itself (Id, Name, For* booleans), not a location. Needs new metrcLocationTypeSchema.",
+      "fieldTypes": {
+        "Id": "number",
+        "Name": "string",
+        "ForPlantBatches": "boolean",
+        "ForPlants": "boolean",
+        "ForHarvests": "boolean",
+        "ForPackages": "boolean"
+      }
+    },
+    "/locations/v2/inactive": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "OK (trivially - 0 rows)",
+      "notes": "Apply wide-window defensively (matches /packages/v2/onhold precedent). Row shape unverified but expected to match metrcLocationSchema since active and inactive locations are the same conceptual entity.",
+      "fieldTypes": "(expected to match metrcLocationSchema)"
+    },
+    "/locations/v2/{id}": {
+      "envelope": "single-object",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Confirmed shape matches metrcLocationSchema exactly. Reuses existing schema with validateOne.",
+      "fieldTypes": {
+        "Id": "number",
+        "Name": "string",
+        "LocationTypeId": "number",
+        "LocationTypeName": "string",
+        "ForPlantBatches": "boolean",
+        "ForPlants": "boolean",
+        "ForHarvests": "boolean",
+        "ForPackages": "boolean"
+      }
+    },
+    "/sublocations/v2/active": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "OK (trivially - 0 rows)",
+      "notes": "License has 0 sublocations - cannot verify shape from live data. Apply wide-window defensively. Schema needs .passthrough() so any sublocation-specific fields don't fail validation; explicit-type the fields documented in METRC docs (Id, Name, LocationId, LocationName) and let passthrough cover the rest.",
+      "fieldTypes": "(unverified - apply schema based on METRC docs description)"
+    },
+    "/sublocations/v2/inactive": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "OK (trivially - 0 rows)",
+      "notes": "Same as sublocations/active - reuse schema with passthrough.",
+      "fieldTypes": "(unverified - shares schema with active)"
+    },
+    "/sublocations/v2/{id}": {
+      "envelope": "n/a",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "License has 0 sublocations to probe. Tested /sublocations/v2/1 - returned 401 (no permission for that id, expected since it doesn't exist). Endpoint URL exists in docs. Implement using metrcSublocationSchema + validateOne following the same pattern as getLocationById; live verification deferred until a license with sublocations exists.",
+      "fieldTypes": "(unverified - shares schema with sublocations list)"
+    }
+  }
+}
