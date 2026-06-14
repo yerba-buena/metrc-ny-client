@@ -4,14 +4,14 @@ export {
   deliveryWithPackagesSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
-  metrcSalesTransactionSchema, metrcItemCategorySchema,
+  metrcSalesTransactionSchema, metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "./schemas/index.js";
 
 export type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, MetrcDelivery, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail, MetrcSalesTransaction,
-  MetrcItemCategory,
+  MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "./schemas/index.js";
 
 export type { MetrcClient, MetrcConfig, SalesReceiptsWindow } from "./client/interface.js";

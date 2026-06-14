@@ -6,13 +6,13 @@ import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
-  metrcItemCategorySchema,
+  metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../schemas/index.js";
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
-  MetrcItemCategory,
+  MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../schemas/index.js";
 import { MetrcResponseError } from "../errors.js";
 import { NOOP_LOGGER } from "../logger.js";
@@ -348,6 +348,129 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       const endpoint = "/sales/v2/customertypes";
       const data = await requestArray<unknown>(request, endpoint);
       return validateArray(z.string(), data, endpoint);
+    },
+
+    /**
+     * API: GET /strains/v2/active (LastModified-quirk)
+     *
+     * Phase 5 audit (docs/superpowers/audits/discover-p5-endpoints.json)
+     * confirmed QUIRKED: bare 0 vs windowed 174 records. Pass a wide
+     * window so every active strain is returned regardless of last edit.
+     */
+    async getActiveStrains(): Promise<MetrcStrain[]> {
+      const endpoint = "/strains/v2/active";
+      const data = await fetchAllPages<MetrcStrain>(
+        paged<MetrcStrain>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcStrainSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /strains/v2/inactive (LastModified-quirk)
+     *
+     * Phase 5 audit (docs/superpowers/audits/discover-p5-endpoints.json)
+     * showed 1 row with INCONCLUSIVE quirk verdict. Apply wide-window
+     * defensively (same pattern as /packages/v2/onhold).
+     */
+    async getInactiveStrains(): Promise<MetrcStrain[]> {
+      const endpoint = "/strains/v2/inactive";
+      const data = await fetchAllPages<MetrcStrain>(
+        paged<MetrcStrain>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcStrainSchema, data, endpoint);
+    },
+
+    /** API: GET /strains/v2/{id} */
+    async getStrainById(id: number): Promise<MetrcStrain> {
+      const endpoint = `/strains/v2/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcStrainSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sublocations/v2/active (LastModified-quirk)
+     *
+     * Phase 5 audit (docs/superpowers/audits/discover-p5-endpoints.json)
+     * showed 0 rows (license has no sublocations). Apply wide-window
+     * defensively. Shape is unverified live; uses .passthrough().
+     */
+    async getActiveSublocations(): Promise<MetrcSublocation[]> {
+      const endpoint = "/sublocations/v2/active";
+      const data = await fetchAllPages<MetrcSublocation>(
+        paged<MetrcSublocation>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSublocationSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sublocations/v2/inactive (LastModified-quirk)
+     *
+     * Phase 5 audit (docs/superpowers/audits/discover-p5-endpoints.json)
+     * showed 0 rows (license has no sublocations). Apply wide-window
+     * defensively. Shape is unverified live; uses .passthrough().
+     */
+    async getInactiveSublocations(): Promise<MetrcSublocation[]> {
+      const endpoint = "/sublocations/v2/inactive";
+      const data = await fetchAllPages<MetrcSublocation>(
+        paged<MetrcSublocation>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSublocationSchema, data, endpoint);
+    },
+
+    /** API: GET /sublocations/v2/{id} */
+    async getSublocationById(id: number): Promise<MetrcSublocation> {
+      const endpoint = `/sublocations/v2/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcSublocationSchema, data, endpoint);
+    },
+
+    /** API: GET /locations/v2/types */
+    async getLocationTypes(): Promise<MetrcLocationType[]> {
+      const endpoint = "/locations/v2/types";
+      const data = await fetchAllPages<MetrcLocationType>(paged<MetrcLocationType>(endpoint), endpoint);
+      return validateArray(metrcLocationTypeSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /locations/v2/inactive (LastModified-quirk)
+     *
+     * Phase 5 audit (docs/superpowers/audits/discover-p5-endpoints.json)
+     * showed 0 rows (license has no inactive locations). Apply wide-window
+     * defensively. Row shape expected to match metrcLocationSchema.
+     */
+    async getInactiveLocations(): Promise<MetrcLocation[]> {
+      const endpoint = "/locations/v2/inactive";
+      const data = await fetchAllPages<MetrcLocation>(
+        paged<MetrcLocation>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcLocationSchema, data, endpoint);
+    },
+
+    /** API: GET /locations/v2/{id} */
+    async getLocationById(id: number): Promise<MetrcLocation> {
+      const endpoint = `/locations/v2/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcLocationSchema, data, endpoint);
     },
   };
 }

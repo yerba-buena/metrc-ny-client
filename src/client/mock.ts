@@ -3,7 +3,7 @@ import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
-  MetrcItemCategory,
+  MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../schemas/index.js";
 
 export interface MockFixtures {
@@ -25,6 +25,15 @@ export interface MockFixtures {
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
   itemCategories: MetrcItemCategory[];
   salesCustomerTypes: string[];
+  strains: MetrcStrain[];
+  inactiveStrains: MetrcStrain[];
+  strainDetailsById: Record<number, MetrcStrain>;
+  sublocations: MetrcSublocation[];
+  inactiveSublocations: MetrcSublocation[];
+  sublocationDetailsById: Record<number, MetrcSublocation>;
+  locationTypes: MetrcLocationType[];
+  inactiveLocations: MetrcLocation[];
+  locationDetailsById: Record<number, MetrcLocation>;
 }
 
 const DEFAULT_TRANSFER: MetrcTransfer = {
@@ -479,6 +488,47 @@ const DEFAULT_TRANSFER_TYPE: MetrcTransferType = {
   RequiresVehicleRegistrationNumber: false,
 };
 
+const DEFAULT_STRAIN: MetrcStrain = {
+  Id: 1,
+  Name: "Blue Dream",
+  Genetics: "Blueberry x Haze",
+  IndicaPercentage: 40,
+  SativaPercentage: 60,
+  CbdLevel: null,
+  ThcLevel: 18.5,
+  TestingStatus: "NotRequired",
+  IsUsed: true,
+};
+
+const DEFAULT_LOCATION_TYPE: MetrcLocationType = {
+  Id: 1,
+  Name: "Default",
+  ForPlantBatches: false,
+  ForPlants: false,
+  ForHarvests: false,
+  ForPackages: true,
+};
+
+const DEFAULT_SUBLOCATION: MetrcSublocation = {
+  Id: 1,
+  Name: "Sublocation A",
+  LocationId: 1,
+  LocationName: "Fulfillment",
+};
+
+const DEFAULT_STRAIN_DETAILS_BY_ID: Record<number, MetrcStrain> = {
+  [DEFAULT_STRAIN.Id]: DEFAULT_STRAIN,
+};
+
+const DEFAULT_SUBLOCATION_DETAILS_BY_ID: Record<number, MetrcSublocation> = {
+  [DEFAULT_SUBLOCATION.Id]: DEFAULT_SUBLOCATION,
+};
+
+const DEFAULT_LOCATION_DETAILS_BY_ID: Record<number, MetrcLocation> = {
+  [DEFAULT_LOCATION_FULFILLMENT.Id]: DEFAULT_LOCATION_FULFILLMENT,
+  [DEFAULT_LOCATION_VAULT.Id]: DEFAULT_LOCATION_VAULT,
+};
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   outgoingTransfers: [DEFAULT_OUTGOING_TRANSFER],
@@ -498,6 +548,15 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
   itemCategories: [DEFAULT_ITEM_CATEGORY_FLOWER, DEFAULT_ITEM_CATEGORY_PREROLL],
   salesCustomerTypes: DEFAULT_SALES_CUSTOMER_TYPES,
+  strains: [DEFAULT_STRAIN],
+  inactiveStrains: [],
+  strainDetailsById: DEFAULT_STRAIN_DETAILS_BY_ID,
+  sublocations: [DEFAULT_SUBLOCATION],
+  inactiveSublocations: [],
+  sublocationDetailsById: DEFAULT_SUBLOCATION_DETAILS_BY_ID,
+  locationTypes: [DEFAULT_LOCATION_TYPE],
+  inactiveLocations: [],
+  locationDetailsById: DEFAULT_LOCATION_DETAILS_BY_ID,
 };
 
 export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXTURES): MetrcClient {
@@ -570,6 +629,39 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getSalesCustomerTypes(): Promise<string[]> {
       return [...fixtures.salesCustomerTypes];
+    },
+    async getActiveStrains(): Promise<MetrcStrain[]> {
+      return [...fixtures.strains];
+    },
+    async getInactiveStrains(): Promise<MetrcStrain[]> {
+      return [...fixtures.inactiveStrains];
+    },
+    async getStrainById(id: number): Promise<MetrcStrain> {
+      const strain = fixtures.strainDetailsById[id];
+      if (!strain) throw new Error(`mock: no strain fixture for id ${id}`);
+      return { ...strain };
+    },
+    async getActiveSublocations(): Promise<MetrcSublocation[]> {
+      return [...fixtures.sublocations];
+    },
+    async getInactiveSublocations(): Promise<MetrcSublocation[]> {
+      return [...fixtures.inactiveSublocations];
+    },
+    async getSublocationById(id: number): Promise<MetrcSublocation> {
+      const sublocation = fixtures.sublocationDetailsById[id];
+      if (!sublocation) throw new Error(`mock: no sublocation fixture for id ${id}`);
+      return { ...sublocation };
+    },
+    async getLocationTypes(): Promise<MetrcLocationType[]> {
+      return [...fixtures.locationTypes];
+    },
+    async getInactiveLocations(): Promise<MetrcLocation[]> {
+      return [...fixtures.inactiveLocations];
+    },
+    async getLocationById(id: number): Promise<MetrcLocation> {
+      const location = fixtures.locationDetailsById[id];
+      if (!location) throw new Error(`mock: no location fixture for id ${id}`);
+      return { ...location };
     },
   };
 }
