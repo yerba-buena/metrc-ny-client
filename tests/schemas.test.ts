@@ -3,7 +3,7 @@ import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcDeliverySchema,
   metrcLocationSchema, metrcActivePackageSchema, metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
-  metrcSalesTransactionSchema, metrcItemCategorySchema,
+  metrcSalesTransactionSchema, metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../src/schemas/index.js";
 
 const sampleTransfer = {
@@ -474,5 +474,75 @@ describe("metrcTransferTypeSchema", () => {
   it("rejects a transfer type with wrong type on ForLicensedShipments", () => {
     const bad = { ...sampleTransferType, ForLicensedShipments: "not-a-bool" };
     expect(() => metrcTransferTypeSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleStrain = {
+  Id: 1,
+  Name: "Blue Dream",
+  Genetics: "Blueberry x Haze",
+  IndicaPercentage: 40,
+  SativaPercentage: 60,
+  CbdLevel: null,
+  ThcLevel: 18.5,
+  TestingStatus: "NotRequired",
+  IsUsed: true,
+};
+
+describe("metrcStrainSchema", () => {
+  it("parses a well-formed strain", () => {
+    expect(() => metrcStrainSchema.parse(sampleStrain)).not.toThrow();
+  });
+  it("rejects a strain missing Name", () => {
+    const bad = { ...sampleStrain, Name: undefined };
+    expect(() => metrcStrainSchema.parse(bad)).toThrow();
+  });
+  it("rejects a strain with wrong type on IsUsed", () => {
+    const bad = { ...sampleStrain, IsUsed: "not-a-bool" };
+    expect(() => metrcStrainSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleLocationType = {
+  Id: 1,
+  Name: "Default",
+  ForPlantBatches: false,
+  ForPlants: false,
+  ForHarvests: false,
+  ForPackages: true,
+};
+
+describe("metrcLocationTypeSchema", () => {
+  it("parses a well-formed location type", () => {
+    expect(() => metrcLocationTypeSchema.parse(sampleLocationType)).not.toThrow();
+  });
+  it("rejects a location type missing Name", () => {
+    const bad = { ...sampleLocationType, Name: undefined };
+    expect(() => metrcLocationTypeSchema.parse(bad)).toThrow();
+  });
+  it("rejects a location type with wrong type on ForPlants", () => {
+    const bad = { ...sampleLocationType, ForPlants: "not-a-bool" };
+    expect(() => metrcLocationTypeSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleSublocation = {
+  Id: 1,
+  Name: "Sublocation A",
+  LocationId: 1,
+  LocationName: "Fulfillment",
+};
+
+describe("metrcSublocationSchema", () => {
+  it("parses a well-formed sublocation", () => {
+    expect(() => metrcSublocationSchema.parse(sampleSublocation)).not.toThrow();
+  });
+  it("rejects a sublocation missing Name", () => {
+    const bad = { ...sampleSublocation, Name: undefined };
+    expect(() => metrcSublocationSchema.parse(bad)).toThrow();
+  });
+  it("rejects a sublocation with wrong type on LocationId", () => {
+    const bad = { ...sampleSublocation, LocationId: "not-a-number" };
+    expect(() => metrcSublocationSchema.parse(bad)).toThrow();
   });
 });

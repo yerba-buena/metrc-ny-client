@@ -6,13 +6,13 @@ import type { MetrcClient } from "../src/client/interface.js";
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
-  MetrcItemCategory,
+  MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../src/schemas/index.js";
 import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
-  metrcItemCategorySchema,
+  metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../src/schemas/index.js";
 
 const okEnvelope = (data: unknown[]) => ({
@@ -52,6 +52,15 @@ function makeLiveClientFromFixtures(
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
   itemCategories: MetrcItemCategory[],
   salesCustomerTypes: string[],
+  strains: MetrcStrain[],
+  inactiveStrains: MetrcStrain[],
+  strainDetailsById: Record<number, MetrcStrain>,
+  sublocations: MetrcSublocation[],
+  inactiveSublocations: MetrcSublocation[],
+  sublocationDetailsById: Record<number, MetrcSublocation>,
+  locationTypes: MetrcLocationType[],
+  inactiveLocations: MetrcLocation[],
+  locationDetailsById: Record<number, MetrcLocation>,
 ): MetrcClient {
   const fetch = vi.fn(async (url: string) => {
     if (url.includes("/items/v2/categories")) return okEnvelope(itemCategories) as unknown as Response;
@@ -61,7 +70,16 @@ function makeLiveClientFromFixtures(
     if (url.includes("/transfers/v2/outgoing")) return okEnvelope(outgoingTransfers) as unknown as Response;
     if (url.includes("/transfers/v2/rejected")) return okEnvelope(rejectedTransfers) as unknown as Response;
     if (url.includes("/transfers/v2/incoming")) return okEnvelope(transfers) as unknown as Response;
+    // Phase 5 endpoints - locations expansion (types + inactive + by-id, all before /locations/v2/active)
+    if (url.includes("/locations/v2/types")) return okEnvelope(locationTypes) as unknown as Response;
+    if (url.includes("/locations/v2/inactive")) return okEnvelope(inactiveLocations) as unknown as Response;
     if (url.includes("/locations/v2/active")) return okEnvelope(locations) as unknown as Response;
+    // Phase 5 endpoints - strains (active + inactive before by-id regex)
+    if (url.includes("/strains/v2/active")) return okEnvelope(strains) as unknown as Response;
+    if (url.includes("/strains/v2/inactive")) return okEnvelope(inactiveStrains) as unknown as Response;
+    // Phase 5 endpoints - sublocations (active + inactive before by-id regex)
+    if (url.includes("/sublocations/v2/active")) return okEnvelope(sublocations) as unknown as Response;
+    if (url.includes("/sublocations/v2/inactive")) return okEnvelope(inactiveSublocations) as unknown as Response;
     if (url.includes("/packages/v2/inactive")) return okEnvelope(inactivePackages) as unknown as Response;
     if (url.includes("/packages/v2/onhold")) return okEnvelope(onHoldPackages) as unknown as Response;
     if (url.includes("/packages/v2/active")) return okEnvelope(activePackages) as unknown as Response;
@@ -77,6 +95,39 @@ function makeLiveClientFromFixtures(
         ok: true, status: 200, headers: new Headers(),
         json: async () => detail,
         text: async () => "",
+      } as unknown as Response;
+    }
+    // Phase 5 strain by-id (must come after active/inactive list matchers)
+    const strainDetailMatch = url.match(/\/strains\/v2\/(\d+)(?:\?|$)/);
+    if (strainDetailMatch) {
+      const id = parseInt(strainDetailMatch[1]!, 10);
+      const strain = strainDetailsById[id];
+      if (!strain) throw new Error(`fixture: no strain detail for id ${id}`);
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => strain, text: async () => "",
+      } as unknown as Response;
+    }
+    // Phase 5 sublocation by-id (must come after active/inactive list matchers)
+    const subLocDetailMatch = url.match(/\/sublocations\/v2\/(\d+)(?:\?|$)/);
+    if (subLocDetailMatch) {
+      const id = parseInt(subLocDetailMatch[1]!, 10);
+      const subloc = sublocationDetailsById[id];
+      if (!subloc) throw new Error(`fixture: no sublocation detail for id ${id}`);
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => subloc, text: async () => "",
+      } as unknown as Response;
+    }
+    // Phase 5 location by-id (must come after types/inactive/active list matchers)
+    const locDetailMatch = url.match(/\/locations\/v2\/(\d+)(?:\?|$)/);
+    if (locDetailMatch) {
+      const id = parseInt(locDetailMatch[1]!, 10);
+      const loc = locationDetailsById[id];
+      if (!loc) throw new Error(`fixture: no location detail for id ${id}`);
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => loc, text: async () => "",
       } as unknown as Response;
     }
     // /packages/v2/{id-or-label} — must come after the list/lookup matchers above.
@@ -130,6 +181,15 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.salesReceiptDetailsById,
     fixtures.itemCategories,
     fixtures.salesCustomerTypes,
+    fixtures.strains,
+    fixtures.inactiveStrains,
+    fixtures.strainDetailsById,
+    fixtures.sublocations,
+    fixtures.inactiveSublocations,
+    fixtures.sublocationDetailsById,
+    fixtures.locationTypes,
+    fixtures.inactiveLocations,
+    fixtures.locationDetailsById,
   )],
 ];
 
@@ -280,5 +340,74 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const result = await client.getTransferTypes();
     expect(result.length).toBe(fixtures.transferTypes.length);
     for (const t of result) expect(() => metrcTransferTypeSchema.parse(t)).not.toThrow();
+  });
+
+  it("getActiveStrains returns strains that parse as MetrcStrain", async () => {
+    const client = makeClient();
+    const result = await client.getActiveStrains();
+    expect(result.length).toBe(fixtures.strains.length);
+    for (const s of result) expect(() => metrcStrainSchema.parse(s)).not.toThrow();
+  });
+
+  it("getInactiveStrains returns strains that parse as MetrcStrain", async () => {
+    const client = makeClient();
+    const result = await client.getInactiveStrains();
+    expect(result.length).toBe(fixtures.inactiveStrains.length);
+    for (const s of result) expect(() => metrcStrainSchema.parse(s)).not.toThrow();
+  });
+
+  it("getStrainById returns a single strain that parses as MetrcStrain", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.strainDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const strain = await client.getStrainById(knownId);
+    expect(strain.Id).toBe(knownId);
+    expect(() => metrcStrainSchema.parse(strain)).not.toThrow();
+  });
+
+  it("getActiveSublocations returns sublocations that parse as MetrcSublocation", async () => {
+    const client = makeClient();
+    const result = await client.getActiveSublocations();
+    expect(result.length).toBe(fixtures.sublocations.length);
+    for (const s of result) expect(() => metrcSublocationSchema.parse(s)).not.toThrow();
+  });
+
+  it("getInactiveSublocations returns sublocations that parse as MetrcSublocation", async () => {
+    const client = makeClient();
+    const result = await client.getInactiveSublocations();
+    expect(result.length).toBe(fixtures.inactiveSublocations.length);
+    for (const s of result) expect(() => metrcSublocationSchema.parse(s)).not.toThrow();
+  });
+
+  it("getSublocationById returns a single sublocation that parses as MetrcSublocation", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.sublocationDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const sublocation = await client.getSublocationById(knownId);
+    expect(sublocation.Id).toBe(knownId);
+    expect(() => metrcSublocationSchema.parse(sublocation)).not.toThrow();
+  });
+
+  it("getLocationTypes returns location types that parse as MetrcLocationType", async () => {
+    const client = makeClient();
+    const result = await client.getLocationTypes();
+    expect(result.length).toBe(fixtures.locationTypes.length);
+    for (const t of result) expect(() => metrcLocationTypeSchema.parse(t)).not.toThrow();
+  });
+
+  it("getInactiveLocations returns locations that parse as MetrcLocation", async () => {
+    const client = makeClient();
+    const result = await client.getInactiveLocations();
+    expect(result.length).toBe(fixtures.inactiveLocations.length);
+    for (const loc of result) expect(() => metrcLocationSchema.parse(loc)).not.toThrow();
+  });
+
+  it("getLocationById returns a single location that parses as MetrcLocation", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.locationDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const location = await client.getLocationById(knownId);
+    expect(location.Id).toBe(knownId);
+    expect(() => metrcLocationSchema.parse(location)).not.toThrow();
   });
 });

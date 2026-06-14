@@ -3,7 +3,7 @@ import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
-  MetrcItemCategory,
+  MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../schemas/index.js";
 import type { Logger } from "../logger.js";
 import type { RetryConfig } from "../transport/retry.js";
@@ -102,4 +102,31 @@ export interface MetrcClient {
 
   /** API: GET /sales/v2/customertypes */
   getSalesCustomerTypes(): Promise<string[]>;
+
+  /** API: GET /strains/v2/active (LastModified-quirk) */
+  getActiveStrains(): Promise<MetrcStrain[]>;
+
+  /** API: GET /strains/v2/inactive (LastModified-quirk) */
+  getInactiveStrains(): Promise<MetrcStrain[]>;
+
+  /** API: GET /strains/v2/{id} */
+  getStrainById(id: number): Promise<MetrcStrain>;
+
+  /** API: GET /sublocations/v2/active (LastModified-quirk) */
+  getActiveSublocations(): Promise<MetrcSublocation[]>;
+
+  /** API: GET /sublocations/v2/inactive (LastModified-quirk) */
+  getInactiveSublocations(): Promise<MetrcSublocation[]>;
+
+  /** API: GET /sublocations/v2/{id} */
+  getSublocationById(id: number): Promise<MetrcSublocation>;
+
+  /** API: GET /locations/v2/types */
+  getLocationTypes(): Promise<MetrcLocationType[]>;
+
+  /** API: GET /locations/v2/inactive (LastModified-quirk) */
+  getInactiveLocations(): Promise<MetrcLocation[]>;
+
+  /** API: GET /locations/v2/{id} */
+  getLocationById(id: number): Promise<MetrcLocation>;
 }

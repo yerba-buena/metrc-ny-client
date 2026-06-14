@@ -722,4 +722,201 @@ describe("createLiveMetrcClient", () => {
     const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
     await expect(client.getPackageById(1)).rejects.toBeInstanceOf(MetrcResponseError);
   });
+
+  it("getActiveStrains calls /strains/v2/active with wide window params", async () => {
+    let capturedUrl = "";
+    const fakeStrain = {
+      Id: 1, Name: "Blue Dream", Genetics: "Blueberry x Haze",
+      IndicaPercentage: 40, SativaPercentage: 60, CbdLevel: null,
+      ThcLevel: 18.5, TestingStatus: "NotRequired", IsUsed: true,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeStrain]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getActiveStrains();
+    expect(capturedUrl).toContain("/strains/v2/active");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Blue Dream");
+  });
+
+  it("validateResponses=true rejects malformed active strains via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a strain" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getActiveStrains()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getInactiveStrains calls /strains/v2/inactive with wide window params", async () => {
+    let capturedUrl = "";
+    const fakeStrain = {
+      Id: 2, Name: "Green Crack", Genetics: "Indica Hybrid",
+      IndicaPercentage: 65, SativaPercentage: 35, CbdLevel: null,
+      ThcLevel: 20, TestingStatus: "NotRequired", IsUsed: false,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeStrain]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInactiveStrains();
+    expect(capturedUrl).toContain("/strains/v2/inactive");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("getStrainById calls /strains/v2/{id} and returns the single strain", async () => {
+    let capturedUrl = "";
+    const fakeStrain = {
+      Id: 1, Name: "Blue Dream", Genetics: "Blueberry x Haze",
+      IndicaPercentage: 40, SativaPercentage: 60, CbdLevel: null,
+      ThcLevel: 18.5, TestingStatus: "NotRequired", IsUsed: true,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => fakeStrain, text: async () => "",
+      } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getStrainById(1);
+    expect(capturedUrl).toContain("/strains/v2/1");
+    expect(result.Name).toBe("Blue Dream");
+  });
+
+  it("validateResponses=true rejects a malformed strain detail via Zod", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => ({ not: "a strain" }), text: async () => "",
+    } as unknown as Response));
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getStrainById(1)).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getActiveSublocations calls /sublocations/v2/active with wide window params", async () => {
+    let capturedUrl = "";
+    const fakeSublocation = {
+      Id: 1, Name: "Sublocation A", LocationId: 1, LocationName: "Fulfillment",
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeSublocation]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getActiveSublocations();
+    expect(capturedUrl).toContain("/sublocations/v2/active");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("getInactiveSublocations calls /sublocations/v2/inactive with wide window params", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInactiveSublocations();
+    expect(capturedUrl).toContain("/sublocations/v2/inactive");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(0);
+  });
+
+  it("getSublocationById calls /sublocations/v2/{id} and returns the single sublocation", async () => {
+    let capturedUrl = "";
+    const fakeSublocation = {
+      Id: 1, Name: "Sublocation A", LocationId: 1, LocationName: "Fulfillment",
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => fakeSublocation, text: async () => "",
+      } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSublocationById(1);
+    expect(capturedUrl).toContain("/sublocations/v2/1");
+    expect(result.Name).toBe("Sublocation A");
+  });
+
+  it("validateResponses=true rejects a malformed sublocation detail via Zod", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => ({ not: "a sublocation" }), text: async () => "",
+    } as unknown as Response));
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getSublocationById(1)).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getLocationTypes calls /locations/v2/types without window params", async () => {
+    let capturedUrl = "";
+    const fakeLocationType = {
+      Id: 1, Name: "Default",
+      ForPlantBatches: false, ForPlants: false, ForHarvests: false, ForPackages: true,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeLocationType]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getLocationTypes();
+    expect(capturedUrl).toContain("/locations/v2/types");
+    expect(capturedUrl).not.toContain("lastModifiedStart");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Default");
+  });
+
+  it("validateResponses=true rejects malformed location types via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a type" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getLocationTypes()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getInactiveLocations calls /locations/v2/inactive with wide window params", async () => {
+    let capturedUrl = "";
+    const fakeLocation = {
+      Id: 3, Name: "Inactive Loc", LocationTypeId: 1, LocationTypeName: "Default",
+      ForPlantBatches: false, ForPlants: false, ForHarvests: false, ForPackages: true,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeLocation]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInactiveLocations();
+    expect(capturedUrl).toContain("/locations/v2/inactive");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("getLocationById calls /locations/v2/{id} and returns the single location", async () => {
+    let capturedUrl = "";
+    const fakeLocation = {
+      Id: 1, Name: "Fulfillment", LocationTypeId: 1, LocationTypeName: "Default",
+      ForPlantBatches: false, ForPlants: false, ForHarvests: false, ForPackages: true,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => fakeLocation, text: async () => "",
+      } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getLocationById(1);
+    expect(capturedUrl).toContain("/locations/v2/1");
+    expect(result.Name).toBe("Fulfillment");
+  });
+
+  it("validateResponses=true rejects a malformed location detail via Zod", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => ({ not: "a location" }), text: async () => "",
+    } as unknown as Response));
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getLocationById(1)).rejects.toBeInstanceOf(MetrcResponseError);
+  });
 });

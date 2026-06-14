@@ -94,25 +94,25 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
   // ── locations ─────────────────────────────────────────────────────────────
   Object.freeze({
     resource: "locations",
-    status: "partial" as const,
+    status: "complete" as const,
     hasWrites: true,
     endpoints: [
       { path: "/locations/v2/active", method: "GET" as const, clientMethod: "getActiveLocations", status: "complete" as const },
-      { path: "/locations/v2/{id}", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/locations/v2/inactive", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/locations/v2/types", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/locations/v2/types", method: "GET" as const, clientMethod: "getLocationTypes", status: "complete" as const },
+      { path: "/locations/v2/inactive", method: "GET" as const, clientMethod: "getInactiveLocations", status: "complete" as const },
+      { path: "/locations/v2/{id}", method: "GET" as const, clientMethod: "getLocationById", status: "complete" as const },
     ] as const,
   } as const),
 
   // ── sublocations ──────────────────────────────────────────────────────────
   Object.freeze({
     resource: "sublocations",
-    status: "planned" as const,
+    status: "complete" as const,
     hasWrites: true,
     endpoints: [
-      { path: "/sublocations/v2/{id}", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sublocations/v2/active", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sublocations/v2/inactive", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/sublocations/v2/active", method: "GET" as const, clientMethod: "getActiveSublocations", status: "complete" as const },
+      { path: "/sublocations/v2/inactive", method: "GET" as const, clientMethod: "getInactiveSublocations", status: "complete" as const },
+      { path: "/sublocations/v2/{id}", method: "GET" as const, clientMethod: "getSublocationById", status: "complete" as const },
     ] as const,
   } as const),
 
@@ -135,12 +135,12 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
   // ── strains ───────────────────────────────────────────────────────────────
   Object.freeze({
     resource: "strains",
-    status: "planned" as const,
+    status: "complete" as const,
     hasWrites: true,
     endpoints: [
-      { path: "/strains/v2/{id}", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/strains/v2/active", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/strains/v2/inactive", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/strains/v2/active", method: "GET" as const, clientMethod: "getActiveStrains", status: "complete" as const },
+      { path: "/strains/v2/inactive", method: "GET" as const, clientMethod: "getInactiveStrains", status: "complete" as const },
+      { path: "/strains/v2/{id}", method: "GET" as const, clientMethod: "getStrainById", status: "complete" as const },
     ] as const,
   } as const),
 
