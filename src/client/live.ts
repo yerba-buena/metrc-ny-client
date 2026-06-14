@@ -4,13 +4,13 @@ import { requestArray } from "../transport/request-array.js";
 import { fetchAllPages, type PaginatedResponse } from "../transport/pagination.js";
 import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
-  metrcPackageAdjustReasonSchema,
+  metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../schemas/index.js";
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../schemas/index.js";
@@ -281,6 +281,93 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       const endpoint = `/packages/v2/${label}`;
       const data = await request<unknown>(endpoint, {});
       return validateOne(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/adjustments (LastModified-quirk)
+     *
+     * Phase 6 audit (docs/superpowers/audits/discover-p6-endpoints.json)
+     * confirmed QUIRKED: bare 0 vs windowed 959 records. Pass a wide
+     * window. This is the conceptual replacement for the deferred
+     * /packages/v2/{id}/history (METRC NY never exposed that URL; see
+     * closed issue #13).
+     */
+    async getPackageAdjustments(): Promise<MetrcPackageAdjustment[]> {
+      const endpoint = "/packages/v2/adjustments";
+      const data = await fetchAllPages<MetrcPackageAdjustment>(
+        paged<MetrcPackageAdjustment>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcPackageAdjustmentSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/transferred (LastModified-quirk)
+     *
+     * Phase 6 audit (docs/superpowers/audits/discover-p6-endpoints.json)
+     * confirmed QUIRKED: bare 0 vs windowed 11 records. Pass a wide
+     * window. Each row represents a package received via a manifest transfer.
+     */
+    async getTransferredPackages(): Promise<MetrcTransferredPackage[]> {
+      const endpoint = "/packages/v2/transferred";
+      const data = await fetchAllPages<MetrcTransferredPackage>(
+        paged<MetrcTransferredPackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcTransferredPackageSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/intransit (LastModified-quirk)
+     *
+     * Phase 6 audit (docs/superpowers/audits/discover-p6-endpoints.json)
+     * found 0 rows on this license — shape unverified. Apply wide-window
+     * defensively. In-transit packages are just active packages in a
+     * different state, so they reuse metrcActivePackageSchema.
+     */
+    async getInTransitPackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/intransit";
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /packages/v2/labsamples (LastModified-quirk)
+     *
+     * Phase 6 audit (docs/superpowers/audits/discover-p6-endpoints.json)
+     * found 0 rows on this license — shape unverified. Apply wide-window
+     * defensively. Lab sample packages are just active packages in a
+     * different testing state, so they reuse metrcActivePackageSchema.
+     */
+    async getLabSamplePackages(): Promise<MetrcActivePackage[]> {
+      const endpoint = "/packages/v2/labsamples";
+      const data = await fetchAllPages<MetrcActivePackage>(
+        paged<MetrcActivePackage>(endpoint, {
+          lastModifiedStart: "2015-01-01T00:00:00Z",
+          lastModifiedEnd: new Date().toISOString(),
+        }),
+        endpoint,
+      );
+      return validateArray(metrcActivePackageSchema, data, endpoint);
+    },
+
+    /** API: GET /packages/v2/{id}/source/harvests */
+    async getPackageSourceHarvests(id: number): Promise<MetrcPackageSourceHarvest[]> {
+      const endpoint = `/packages/v2/${id}/source/harvests`;
+      const data = await requestArray<unknown>(request, endpoint);
+      return validateArray(metrcPackageSourceHarvestSchema, data, endpoint);
     },
 
     /**

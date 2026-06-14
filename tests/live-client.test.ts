@@ -892,6 +892,132 @@ describe("createLiveMetrcClient", () => {
     expect(result.length).toBe(1);
   });
 
+  it("getPackageAdjustments calls /packages/v2/adjustments with wide window params", async () => {
+    let capturedUrl = "";
+    const fakeAdjustment = {
+      PackageId: 5001, PackageLabel: "LBL-5001",
+      ItemName: "Mock Item", ItemCategoryName: "Flower",
+      PackagedDate: "2026-04-20", PackageLabTestResultExpirationDateTime: null,
+      AdjustmentDate: "2026-04-25", AdjustmentQuantity: 5,
+      AdjustmentUnitOfMeasureName: "Each", AdjustmentUnitOfMeasureAbbreviation: "ea",
+      AdjustmentReasonName: "Spoilage", AdjustmentNote: "Damaged", AdjustedByUserName: "user",
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeAdjustment]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageAdjustments();
+    expect(capturedUrl).toContain("/packages/v2/adjustments");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("validateResponses=true rejects malformed package adjustments via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "an adjustment" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageAdjustments()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getTransferredPackages calls /packages/v2/transferred with wide window params", async () => {
+    let capturedUrl = "";
+    const fakeTransferred = {
+      Id: 100, PackageId: 5002, PackageLabel: "LBL-5002", ManifestNumber: "M-001",
+      ProductName: "Mock Product", ProductCategoryName: "Flower", ItemStrainName: "Strain",
+      SourceHarvestNames: "Harvest 1", SourcePackageLabels: "LBL-5001",
+      RecipientFacilityLicenseNumber: "LIC-1", RecipientFacilityName: "Facility",
+      ReceivedDateTime: "2026-04-28T10:00:00Z", ReceivedQuantity: 25,
+      ReceivedUnitOfMeasureAbbreviation: "ea", ShippedQuantity: 25, ShippedUnitOfMeasureAbbreviation: "ea",
+      ShipmentPackageStateName: "Accepted", LabTestingStateName: "TestPassed",
+      ActualDepartureDateTime: null, ExternalId: null, GrossWeight: null, GrossUnitOfWeightAbbreviation: null,
+      ShipperWholesalePrice: null, ReceiverWholesalePrice: null, ProcessingJobTypeName: null,
+      ContainsPreTreatedProduct: false, PreTreatmentDate: null,
+    };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeTransferred]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getTransferredPackages();
+    expect(capturedUrl).toContain("/packages/v2/transferred");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("validateResponses=true rejects malformed transferred packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a transferred package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getTransferredPackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getInTransitPackages calls /packages/v2/intransit with wide window params", async () => {
+    let capturedUrl = "";
+    const mockClient = await import("../src/client/mock.js").then(m => m.createMockMetrcClient());
+    const fakePkg = (await mockClient.getActivePackages())[0]!;
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakePkg]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInTransitPackages();
+    expect(capturedUrl).toContain("/packages/v2/intransit");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("validateResponses=true rejects malformed in-transit packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getInTransitPackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getLabSamplePackages calls /packages/v2/labsamples with wide window params", async () => {
+    let capturedUrl = "";
+    const mockClient = await import("../src/client/mock.js").then(m => m.createMockMetrcClient());
+    const fakePkg = (await mockClient.getActivePackages())[0]!;
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakePkg]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getLabSamplePackages();
+    expect(capturedUrl).toContain("/packages/v2/labsamples");
+    expect(capturedUrl).toContain("lastModifiedStart=2015-01-01");
+    expect(result.length).toBe(1);
+  });
+
+  it("validateResponses=true rejects malformed lab sample packages via Zod", async () => {
+    const fetch = vi.fn(async () => okEnvelope([{ not: "a package" }]) as unknown as Response);
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getLabSamplePackages()).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
+  it("getPackageSourceHarvests calls /packages/v2/{id}/source/harvests and returns bare array", async () => {
+    let capturedUrl = "";
+    const fakeHarvest = { Name: "Mock Harvest 2026.04" };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true, status: 200, headers: new Headers(),
+        json: async () => [fakeHarvest], text: async () => "",
+      } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getPackageSourceHarvests(5001);
+    expect(capturedUrl).toContain("/packages/v2/5001/source/harvests");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Mock Harvest 2026.04");
+  });
+
+  it("validateResponses=true rejects malformed source harvests via Zod", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true, status: 200, headers: new Headers(),
+      json: async () => [{ noName: "field" }], text: async () => "",
+    } as unknown as Response));
+    const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
+    await expect(client.getPackageSourceHarvests(1)).rejects.toBeInstanceOf(MetrcResponseError);
+  });
+
   it("getLocationById calls /locations/v2/{id} and returns the single location", async () => {
     let capturedUrl = "";
     const fakeLocation = {

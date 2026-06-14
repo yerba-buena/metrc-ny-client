@@ -113,33 +113,27 @@ describe("CLIENT_COVERAGE", () => {
     expect(history).toBeUndefined();
   });
 
-  it("lists /packages/v2/adjustments as planned (live-confirmed: 956 records)", () => {
+  it("lists every packages expansion endpoint from phase 6 as complete", () => {
     const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
     const byPath = Object.fromEntries(packages.endpoints.map(e => [e.path, e]));
-    expect(byPath["/packages/v2/adjustments"]?.status).toBe("planned");
-    expect(byPath["/packages/v2/adjustments"]?.clientMethod).toBeNull();
+    expect(byPath["/packages/v2/adjustments"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/adjustments"]?.clientMethod).toBe("getPackageAdjustments");
+    expect(byPath["/packages/v2/transferred"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/transferred"]?.clientMethod).toBe("getTransferredPackages");
+    expect(byPath["/packages/v2/intransit"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/intransit"]?.clientMethod).toBe("getInTransitPackages");
+    expect(byPath["/packages/v2/labsamples"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/labsamples"]?.clientMethod).toBe("getLabSamplePackages");
+    expect(byPath["/packages/v2/{id}/source/harvests"]?.status).toBe("complete");
+    expect(byPath["/packages/v2/{id}/source/harvests"]?.clientMethod).toBe("getPackageSourceHarvests");
   });
 
-  it("lists packages expansion endpoints as planned", () => {
+  it("marks packages resource as complete (12 of 12 documented endpoints done)", () => {
+    // Phase 6 completes the last 5 endpoints: adjustments, transferred, intransit, labsamples, source/harvests.
+    // All 12 documented endpoints (active, inactive, onhold, types, adjust/reasons, by-id, by-label,
+    // adjustments, transferred, intransit, labsamples, source/harvests) are now complete.
     const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
-    const byPath = Object.fromEntries(packages.endpoints.map(e => [e.path, e]));
-    const plannedPaths = [
-      "/packages/v2/intransit",
-      "/packages/v2/labsamples",
-      "/packages/v2/{id}/source/harvests",
-      "/packages/v2/transferred",
-    ];
-    for (const p of plannedPaths) {
-      expect(byPath[p]?.status, `${p} should be planned`).toBe("planned");
-    }
-  });
-
-  it("marks packages resource as partial (7 complete, 5 planned)", () => {
-    // The original spec underestimated the surface. Now that intransit/labsamples/
-    // adjustments/source-harvests/transferred are enumerated as planned, packages
-    // moves from complete back to partial. That is correct.
-    const packages = CLIENT_COVERAGE.find((r) => r.resource === "packages")!;
-    expect(packages.status).toBe("partial");
+    expect(packages.status).toBe("complete");
   });
 
   it("lists groupByLocation and siteSnapshot under packages.helpers", () => {

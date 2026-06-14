@@ -2,14 +2,14 @@
 export {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcDeliverySchema,
   deliveryWithPackagesSchema, metrcLocationSchema, metrcActivePackageSchema,
-  metrcPackageAdjustReasonSchema,
+  metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema, metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "./schemas/index.js";
 
 export type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, MetrcDelivery, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail, MetrcSalesTransaction,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "./schemas/index.js";

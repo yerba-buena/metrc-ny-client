@@ -1,7 +1,7 @@
 import type { MetrcClient, SalesReceiptsWindow } from "./interface.js";
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../schemas/index.js";
@@ -18,6 +18,11 @@ export interface MockFixtures {
   onHoldPackages: MetrcActivePackage[];
   packageTypes: string[];
   packageAdjustReasons: MetrcPackageAdjustReason[];
+  packageAdjustments: MetrcPackageAdjustment[];
+  transferredPackages: MetrcTransferredPackage[];
+  inTransitPackages: MetrcActivePackage[];
+  labSamplePackages: MetrcActivePackage[];
+  sourceHarvestsByPackageId: Record<number, MetrcPackageSourceHarvest[]>;
   packageDetailsById: Record<number, MetrcActivePackage>;
   packageDetailsByLabel: Record<string, MetrcActivePackage>;
   items: MetrcItem[];
@@ -529,6 +534,60 @@ const DEFAULT_LOCATION_DETAILS_BY_ID: Record<number, MetrcLocation> = {
   [DEFAULT_LOCATION_VAULT.Id]: DEFAULT_LOCATION_VAULT,
 };
 
+const DEFAULT_PACKAGE_ADJUSTMENT: MetrcPackageAdjustment = {
+  PackageId: 5001,
+  PackageLabel: "1A4FF0300000001000000101",
+  ItemName: "Mock Flower 3.5g",
+  ItemCategoryName: "Flower",
+  PackagedDate: "2026-04-20",
+  PackageLabTestResultExpirationDateTime: null,
+  AdjustmentDate: "2026-04-25",
+  AdjustmentQuantity: 5,
+  AdjustmentUnitOfMeasureName: "Each",
+  AdjustmentUnitOfMeasureAbbreviation: "ea",
+  AdjustmentReasonName: "Spoilage",
+  AdjustmentNote: "Damaged units",
+  AdjustedByUserName: "mock-user",
+};
+
+const DEFAULT_TRANSFERRED_PACKAGE: MetrcTransferredPackage = {
+  Id: 100,
+  PackageId: 5002,
+  PackageLabel: "1A4FF0300000001000000102",
+  ManifestNumber: "M-2026-001",
+  ProductName: "Mock Pre-Roll 1g",
+  ProductCategoryName: "Pre-Rolls",
+  ItemStrainName: "Mock Strain B",
+  SourceHarvestNames: "Mock Harvest 2026.04",
+  SourcePackageLabels: "1A4FF0300000001000000101",
+  RecipientFacilityLicenseNumber: "OCM-RET-MOCK-1",
+  RecipientFacilityName: "Mock Dispensary",
+  ReceivedDateTime: "2026-04-28T10:00:00Z",
+  ReceivedQuantity: 25,
+  ReceivedUnitOfMeasureAbbreviation: "ea",
+  ShippedQuantity: 25,
+  ShippedUnitOfMeasureAbbreviation: "ea",
+  ShipmentPackageStateName: "Accepted",
+  LabTestingStateName: "TestPassed",
+  ActualDepartureDateTime: null,
+  ExternalId: null,
+  GrossWeight: null,
+  GrossUnitOfWeightAbbreviation: null,
+  ShipperWholesalePrice: null,
+  ReceiverWholesalePrice: null,
+  ProcessingJobTypeName: null,
+  ContainsPreTreatedProduct: false,
+  PreTreatmentDate: null,
+};
+
+const DEFAULT_PACKAGE_SOURCE_HARVEST: MetrcPackageSourceHarvest = {
+  Name: "Mock Harvest 2026.04",
+};
+
+const DEFAULT_SOURCE_HARVESTS_BY_PACKAGE_ID: Record<number, MetrcPackageSourceHarvest[]> = {
+  [DEFAULT_ACTIVE_PACKAGE_A.Id]: [DEFAULT_PACKAGE_SOURCE_HARVEST],
+};
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   outgoingTransfers: [DEFAULT_OUTGOING_TRANSFER],
@@ -541,6 +600,11 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   onHoldPackages: [DEFAULT_ON_HOLD_PACKAGE],
   packageTypes: DEFAULT_PACKAGE_TYPES,
   packageAdjustReasons: DEFAULT_PACKAGE_ADJUST_REASONS,
+  packageAdjustments: [DEFAULT_PACKAGE_ADJUSTMENT],
+  transferredPackages: [DEFAULT_TRANSFERRED_PACKAGE],
+  inTransitPackages: [],
+  labSamplePackages: [],
+  sourceHarvestsByPackageId: DEFAULT_SOURCE_HARVESTS_BY_PACKAGE_ID,
   packageDetailsById: DEFAULT_PACKAGE_DETAILS_BY_ID,
   packageDetailsByLabel: DEFAULT_PACKAGE_DETAILS_BY_LABEL,
   items: [DEFAULT_ITEM_CATALOG_A, DEFAULT_ITEM_CATALOG_B],
@@ -609,6 +673,29 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
       const pkg = fixtures.packageDetailsByLabel[label];
       if (!pkg) throw new Error(`mock: no package fixture for label ${label}`);
       return { ...pkg };
+    },
+    async getPackageAdjustments(): Promise<MetrcPackageAdjustment[]> {
+      return fixtures.packageAdjustments.map((adj) => ({ ...adj }));
+    },
+    async getTransferredPackages(): Promise<MetrcTransferredPackage[]> {
+      return fixtures.transferredPackages.map((pkg) => ({ ...pkg }));
+    },
+    async getInTransitPackages(): Promise<MetrcActivePackage[]> {
+      return fixtures.inTransitPackages.map((pkg) => ({
+        ...pkg,
+        Item: { ...pkg.Item },
+        ProductLabel: { ...pkg.ProductLabel },
+      }));
+    },
+    async getLabSamplePackages(): Promise<MetrcActivePackage[]> {
+      return fixtures.labSamplePackages.map((pkg) => ({
+        ...pkg,
+        Item: { ...pkg.Item },
+        ProductLabel: { ...pkg.ProductLabel },
+      }));
+    },
+    async getPackageSourceHarvests(id: number): Promise<MetrcPackageSourceHarvest[]> {
+      return (fixtures.sourceHarvestsByPackageId[id] ?? []).map((h) => ({ ...h }));
     },
     async getActiveItems(): Promise<MetrcItem[]> {
       return [...fixtures.items];

@@ -69,7 +69,7 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
   // ── packages ─────────────────────────────────────────────────────────────
   Object.freeze({
     resource: "packages",
-    status: "partial" as const,
+    status: "complete" as const,
     hasWrites: true,
     endpoints: [
       { path: "/packages/v2/active", method: "GET" as const, clientMethod: "getActivePackages", status: "complete" as const },
@@ -79,11 +79,11 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
       { path: "/packages/v2/adjust/reasons", method: "GET" as const, clientMethod: "getPackageAdjustReasons", status: "complete" as const },
       { path: "/packages/v2/{id}", method: "GET" as const, clientMethod: "getPackageById", status: "complete" as const },
       { path: "/packages/v2/{label}", method: "GET" as const, clientMethod: "getPackageByLabel", status: "complete" as const },
-      { path: "/packages/v2/intransit", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/packages/v2/labsamples", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/packages/v2/adjustments", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/packages/v2/{id}/source/harvests", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/packages/v2/transferred", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/packages/v2/adjustments", method: "GET" as const, clientMethod: "getPackageAdjustments", status: "complete" as const },
+      { path: "/packages/v2/transferred", method: "GET" as const, clientMethod: "getTransferredPackages", status: "complete" as const },
+      { path: "/packages/v2/intransit", method: "GET" as const, clientMethod: "getInTransitPackages", status: "complete" as const },
+      { path: "/packages/v2/labsamples", method: "GET" as const, clientMethod: "getLabSamplePackages", status: "complete" as const },
+      { path: "/packages/v2/{id}/source/harvests", method: "GET" as const, clientMethod: "getPackageSourceHarvests", status: "complete" as const },
     ] as const,
     helpers: [
       { name: "groupByLocation", composes: ["(pure helper over MetrcActivePackage[])"] },
