@@ -14,10 +14,10 @@ Source of truth: [`src/coverage.ts`](src/coverage.ts) (`CLIENT_COVERAGE`). The t
 |---|---|---|---|
 | transfers | `/transfers/v2/incoming`, `/transfers/v2/deliveries/{id}/packages`, `/transfers/v2/outgoing`, `/transfers/v2/rejected`, `/transfers/v2/types` | partial | 13 additional endpoints planned (Phase 8). See [`src/coverage.ts`](src/coverage.ts). |
 | packages | `/packages/v2/active`, `/packages/v2/inactive`, `/packages/v2/onhold`, `/packages/v2/types`, `/packages/v2/adjust/reasons`, `/packages/v2/{id}`, `/packages/v2/{label}` | partial | 5 additional endpoints planned (Phase 6), including `/packages/v2/adjustments`. See [`src/coverage.ts`](src/coverage.ts). |
-| locations | `/locations/v2/active` | partial | `/{id}`, `/inactive`, `/types` planned (Phase 5). |
-| sublocations | — | planned | Phase 5. See [`src/coverage.ts`](src/coverage.ts). |
+| locations | `/locations/v2/active`, `/locations/v2/types`, `/locations/v2/inactive`, `/locations/v2/{id}` | complete | All documented endpoints implemented and tested. |
+| sublocations | `/sublocations/v2/active`, `/sublocations/v2/inactive`, `/sublocations/v2/{id}` | complete | All documented endpoints implemented and tested. Unverified live (audit license had 0 sublocations); uses `.passthrough()` for any undocumented fields. |
 | items | `/items/v2/active`, `/items/v2/categories` | partial | 5 additional endpoints planned (Phase 9). See [`src/coverage.ts`](src/coverage.ts). |
-| strains | — | planned | Phase 5. See [`src/coverage.ts`](src/coverage.ts). |
+| strains | `/strains/v2/active`, `/strains/v2/inactive`, `/strains/v2/{id}` | complete | All documented endpoints implemented and tested. |
 | sales | `/sales/v2/receipts/active`, `/sales/v2/receipts/{id}`, `/sales/v2/customertypes` | partial | 12 additional endpoints planned (Phase 7), including deliveries and retailer-delivery sub-family. `/sales/v2/transactions` removed — URL does not exist in METRC NY v2. See [`src/coverage.ts`](src/coverage.ts). |
 | labtests | — | planned | Phase 10. See [`src/coverage.ts`](src/coverage.ts). |
 | unitsofmeasure | — | planned | Phase 11. |
