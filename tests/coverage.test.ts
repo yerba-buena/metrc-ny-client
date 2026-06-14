@@ -152,19 +152,19 @@ describe("CLIENT_COVERAGE", () => {
     ]));
   });
 
-  it("lists locations expansion endpoints (inactive, {id}, types) as planned", () => {
+  it("lists locations expansion endpoints (inactive, {id}, types) as complete", () => {
     const locations = CLIENT_COVERAGE.find((r) => r.resource === "locations")!;
     const byPath = Object.fromEntries(locations.endpoints.map(e => [e.path, e]));
     expect(byPath["/locations/v2/active"]?.status).toBe("complete");
-    expect(byPath["/locations/v2/{id}"]?.status).toBe("planned");
-    expect(byPath["/locations/v2/inactive"]?.status).toBe("planned");
-    expect(byPath["/locations/v2/types"]?.status).toBe("planned");
+    expect(byPath["/locations/v2/{id}"]?.status).toBe("complete");
+    expect(byPath["/locations/v2/inactive"]?.status).toBe("complete");
+    expect(byPath["/locations/v2/types"]?.status).toBe("complete");
   });
 
-  it("lists sublocations resource as planned with 3 endpoints", () => {
+  it("lists sublocations resource as complete with 3 endpoints", () => {
     const sublocations = CLIENT_COVERAGE.find((r) => r.resource === "sublocations");
     expect(sublocations).toBeDefined();
-    expect(sublocations!.status).toBe("planned");
+    expect(sublocations!.status).toBe("complete");
     expect(sublocations!.endpoints).toHaveLength(3);
     const paths = sublocations!.endpoints.map(e => e.path);
     expect(paths).toEqual(expect.arrayContaining([
@@ -206,14 +206,14 @@ describe("CLIENT_COVERAGE", () => {
     }
   });
 
-  it("lists strains resource with 3 planned endpoints (including inactive)", () => {
+  it("lists strains resource with 3 complete endpoints (including inactive)", () => {
     const strains = CLIENT_COVERAGE.find((r) => r.resource === "strains");
     expect(strains).toBeDefined();
-    expect(strains!.status).toBe("planned");
+    expect(strains!.status).toBe("complete");
     const byPath = Object.fromEntries(strains!.endpoints.map(e => [e.path, e]));
-    expect(byPath["/strains/v2/{id}"]?.status).toBe("planned");
-    expect(byPath["/strains/v2/active"]?.status).toBe("planned");
-    expect(byPath["/strains/v2/inactive"]?.status).toBe("planned");
+    expect(byPath["/strains/v2/{id}"]?.status).toBe("complete");
+    expect(byPath["/strains/v2/active"]?.status).toBe("complete");
+    expect(byPath["/strains/v2/inactive"]?.status).toBe("complete");
   });
 
   it("declares sales receipts list, detail, and customertypes endpoints as complete", () => {
@@ -351,5 +351,43 @@ describe("CLIENT_COVERAGE", () => {
         ).toBe(true);
       }
     }
+  });
+
+  it("marks locations resource as complete (active + types + inactive + by-id all done)", () => {
+    const locations = CLIENT_COVERAGE.find((r) => r.resource === "locations")!;
+    expect(locations.status).toBe("complete");
+    const byPath = Object.fromEntries(locations.endpoints.map(e => [e.path, e]));
+    expect(byPath["/locations/v2/active"]?.clientMethod).toBe("getActiveLocations");
+    expect(byPath["/locations/v2/active"]?.status).toBe("complete");
+    expect(byPath["/locations/v2/types"]?.clientMethod).toBe("getLocationTypes");
+    expect(byPath["/locations/v2/types"]?.status).toBe("complete");
+    expect(byPath["/locations/v2/inactive"]?.clientMethod).toBe("getInactiveLocations");
+    expect(byPath["/locations/v2/inactive"]?.status).toBe("complete");
+    expect(byPath["/locations/v2/{id}"]?.clientMethod).toBe("getLocationById");
+    expect(byPath["/locations/v2/{id}"]?.status).toBe("complete");
+  });
+
+  it("marks sublocations resource as complete", () => {
+    const sublocations = CLIENT_COVERAGE.find((r) => r.resource === "sublocations")!;
+    expect(sublocations.status).toBe("complete");
+    const byPath = Object.fromEntries(sublocations.endpoints.map(e => [e.path, e]));
+    expect(byPath["/sublocations/v2/active"]?.clientMethod).toBe("getActiveSublocations");
+    expect(byPath["/sublocations/v2/active"]?.status).toBe("complete");
+    expect(byPath["/sublocations/v2/inactive"]?.clientMethod).toBe("getInactiveSublocations");
+    expect(byPath["/sublocations/v2/inactive"]?.status).toBe("complete");
+    expect(byPath["/sublocations/v2/{id}"]?.clientMethod).toBe("getSublocationById");
+    expect(byPath["/sublocations/v2/{id}"]?.status).toBe("complete");
+  });
+
+  it("marks strains resource as complete", () => {
+    const strains = CLIENT_COVERAGE.find((r) => r.resource === "strains")!;
+    expect(strains.status).toBe("complete");
+    const byPath = Object.fromEntries(strains.endpoints.map(e => [e.path, e]));
+    expect(byPath["/strains/v2/active"]?.clientMethod).toBe("getActiveStrains");
+    expect(byPath["/strains/v2/active"]?.status).toBe("complete");
+    expect(byPath["/strains/v2/inactive"]?.clientMethod).toBe("getInactiveStrains");
+    expect(byPath["/strains/v2/inactive"]?.status).toBe("complete");
+    expect(byPath["/strains/v2/{id}"]?.clientMethod).toBe("getStrainById");
+    expect(byPath["/strains/v2/{id}"]?.status).toBe("complete");
   });
 });
