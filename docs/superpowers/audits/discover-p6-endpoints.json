@@ -1,0 +1,82 @@
+{
+  "phase": 6,
+  "capturedAt": "2026-06-14T00:00:00Z",
+  "endpoints": {
+    "/packages/v2/adjustments": {
+      "envelope": "paginated",
+      "totalRecords": 959,
+      "lastModifiedQuirkCheck": "QUIRKED",
+      "notes": "bare:0 windowed:959 - strong quirk. Wide window required. The conceptual replacement for the deferred /packages/v2/{id}/history (closed issue #13). Row is an adjustment EVENT, joined to packages via PackageId. No Id of its own.",
+      "fieldTypes": {
+        "PackageId": "number",
+        "PackageLabel": "string",
+        "ItemName": "string",
+        "ItemCategoryName": "string",
+        "PackagedDate": "string",
+        "PackageLabTestResultExpirationDateTime": "null",
+        "AdjustmentDate": "string",
+        "AdjustmentQuantity": "number",
+        "AdjustmentUnitOfMeasureName": "string",
+        "AdjustmentUnitOfMeasureAbbreviation": "string",
+        "AdjustmentReasonName": "string",
+        "AdjustmentNote": "string",
+        "AdjustedByUserName": "string"
+      }
+    },
+    "/packages/v2/transferred": {
+      "envelope": "paginated",
+      "totalRecords": 11,
+      "lastModifiedQuirkCheck": "QUIRKED",
+      "notes": "bare:0 windowed:11 - quirk confirmed. Wide window required. Rows describe packages that were received via a manifest transfer. Many nullable fields (price/weight/process).",
+      "fieldTypes": {
+        "Id": "number",
+        "PackageId": "number",
+        "PackageLabel": "string",
+        "ManifestNumber": "string",
+        "ProductName": "string",
+        "ProductCategoryName": "string",
+        "ItemStrainName": "null",
+        "SourceHarvestNames": "string",
+        "SourcePackageLabels": "string",
+        "RecipientFacilityLicenseNumber": "string",
+        "RecipientFacilityName": "string",
+        "ReceivedDateTime": "string",
+        "ReceivedQuantity": "number",
+        "ReceivedUnitOfMeasureAbbreviation": "string",
+        "ShippedQuantity": "number",
+        "ShippedUnitOfMeasureAbbreviation": "string",
+        "ShipmentPackageStateName": "string",
+        "LabTestingStateName": "string",
+        "ActualDepartureDateTime": "null",
+        "ExternalId": "null",
+        "GrossWeight": "null",
+        "GrossUnitOfWeightAbbreviation": "null",
+        "ShipperWholesalePrice": "null",
+        "ReceiverWholesalePrice": "null",
+        "ProcessingJobTypeName": "null",
+        "ContainsPreTreatedProduct": "boolean",
+        "PreTreatmentDate": "null"
+      }
+    },
+    "/packages/v2/intransit": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "OK (trivially - 0 rows)",
+      "notes": "0 rows on this license - shape unverified. Apply wide-window defensively. Reuses metrcActivePackageSchema since in-transit packages are just active packages in a different state.",
+      "fieldTypes": "(unverified - reuses metrcActivePackageSchema)"
+    },
+    "/packages/v2/labsamples": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "OK (trivially - 0 rows)",
+      "notes": "0 rows on this license - shape unverified. Apply wide-window defensively. Reuses metrcActivePackageSchema.",
+      "fieldTypes": "(unverified - reuses metrcActivePackageSchema)"
+    },
+    "/packages/v2/{id}/source/harvests": {
+      "envelope": "bare-array",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Bare array. Probed against the first active package - returned empty array. Shape of an element unverified live; permissive schema with .passthrough() on an object with Name string (most METRC source-reference rows include a Name field). Revisit when a package with source harvests exists.",
+      "fieldTypes": "(unverified - using permissive schema)"
+    }
+  }
+}
