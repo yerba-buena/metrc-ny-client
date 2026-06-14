@@ -4,7 +4,7 @@ import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
-  metrcItemCategorySchema,
+  metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../src/schemas/index.js";
 
 describe("createMockMetrcClient", () => {
@@ -57,6 +57,15 @@ describe("createMockMetrcClient", () => {
       salesReceiptDetailsById: {},
       itemCategories: [],
       salesCustomerTypes: [],
+      strains: [],
+      inactiveStrains: [],
+      strainDetailsById: {},
+      sublocations: [],
+      inactiveSublocations: [],
+      sublocationDetailsById: {},
+      locationTypes: [],
+      inactiveLocations: [],
+      locationDetailsById: {},
     };
     const client = createMockMetrcClient(fixtures);
     expect(await client.getIncomingTransfers()).toEqual([]);
@@ -327,5 +336,132 @@ describe("createMockMetrcClient", () => {
     const b = await client.getTransferTypes();
     expect(a).toEqual(b);
     expect(a).not.toBe(b);
+  });
+
+  it("default strains parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const strains = await client.getActiveStrains();
+    for (const s of strains) expect(() => metrcStrainSchema.parse(s)).not.toThrow();
+  });
+
+  it("getActiveStrains returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getActiveStrains();
+    const b = await client.getActiveStrains();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getInactiveStrains returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getInactiveStrains();
+    const b = await client.getInactiveStrains();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getStrainById returns the fixture entry for the given id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.strainDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const strain = await client.getStrainById(knownId);
+    expect(strain.Id).toBe(knownId);
+    expect(() => metrcStrainSchema.parse(strain)).not.toThrow();
+  });
+
+  it("getStrainById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getStrainById(999999)).rejects.toThrow(/no strain fixture/);
+  });
+
+  it("default sublocations parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const sublocations = await client.getActiveSublocations();
+    for (const s of sublocations) expect(() => metrcSublocationSchema.parse(s)).not.toThrow();
+  });
+
+  it("getActiveSublocations returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getActiveSublocations();
+    const b = await client.getActiveSublocations();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getInactiveSublocations returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getInactiveSublocations();
+    const b = await client.getInactiveSublocations();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getSublocationById returns the fixture entry for the given id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.sublocationDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const sublocation = await client.getSublocationById(knownId);
+    expect(sublocation.Id).toBe(knownId);
+    expect(() => metrcSublocationSchema.parse(sublocation)).not.toThrow();
+  });
+
+  it("getSublocationById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getSublocationById(999999)).rejects.toThrow(/no sublocation fixture/);
+  });
+
+  it("default location types parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const types = await client.getLocationTypes();
+    for (const t of types) expect(() => metrcLocationTypeSchema.parse(t)).not.toThrow();
+  });
+
+  it("getLocationTypes returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getLocationTypes();
+    const b = await client.getLocationTypes();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getInactiveLocations returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getInactiveLocations();
+    const b = await client.getInactiveLocations();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getLocationById returns the fixture entry for the given id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.locationDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const location = await client.getLocationById(knownId);
+    expect(location.Id).toBe(knownId);
+    expect(() => metrcLocationSchema.parse(location)).not.toThrow();
+  });
+
+  it("getLocationById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getLocationById(999999)).rejects.toThrow(/no location fixture/);
+  });
+
+  it("override-fixtures test: can override all nine new fixture groups with empty values", async () => {
+    const overrides: MockFixtures = {
+      ...DEFAULT_MOCK_FIXTURES,
+      strains: [],
+      inactiveStrains: [],
+      strainDetailsById: {},
+      sublocations: [],
+      inactiveSublocations: [],
+      sublocationDetailsById: {},
+      locationTypes: [],
+      inactiveLocations: [],
+      locationDetailsById: {},
+    };
+    const client = createMockMetrcClient(overrides);
+    expect(await client.getActiveStrains()).toEqual([]);
+    expect(await client.getLocationTypes()).toEqual([]);
+    expect(await client.getActiveSublocations()).toEqual([]);
   });
 });
