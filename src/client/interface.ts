@@ -4,6 +4,8 @@ import type {
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
+  MetrcSalesPatientRegistrationLocation, MetrcSalesDeliveryReturnReason,
+  MetrcSalesCounty, MetrcSalesPaymentType, MetrcSalesDelivery, MetrcSalesRetailerDelivery,
 } from "../schemas/index.js";
 import type { Logger } from "../logger.js";
 import type { RetryConfig } from "../transport/retry.js";
@@ -117,6 +119,95 @@ export interface MetrcClient {
 
   /** API: GET /sales/v2/customertypes */
   getSalesCustomerTypes(): Promise<string[]>;
+
+  /** API: GET /sales/v2/patientregistration/locations */
+  getSalesPatientRegistrationLocations(): Promise<MetrcSalesPatientRegistrationLocation[]>;
+
+  /**
+   * API: GET /sales/v2/deliveries/returnreasons
+   *
+   * Returns the list of valid reasons for returning a sales delivery.
+   * Paginated endpoint; no date window required.
+   */
+  getSalesDeliveryReturnReasons(): Promise<MetrcSalesDeliveryReturnReason[]>;
+
+  /**
+   * API: GET /sales/v2/counties
+   *
+   * NOTE: Returns HTTP 401 on the current license. URL pattern implemented;
+   * live shape unverified. Schema is permissive pending license access.
+   */
+  getSalesCounties(): Promise<MetrcSalesCounty[]>;
+
+  /**
+   * API: GET /sales/v2/paymenttypes
+   *
+   * NOTE: Returns HTTP 401 on the current license. URL pattern implemented;
+   * live shape unverified. Schema is permissive pending license access.
+   */
+  getSalesPaymentTypes(): Promise<MetrcSalesPaymentType[]>;
+
+  /**
+   * API: GET /sales/v2/deliveries/active
+   *
+   * Phase 7 audit: 0 rows on this license (INCONCLUSIVE quirk verdict).
+   * Wide window applied defensively. Schema is permissive pending live row observation.
+   */
+  getActiveSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesDelivery[]>;
+
+  /**
+   * API: GET /sales/v2/deliveries/inactive
+   *
+   * Phase 7 audit: 0 rows on this license. Wide window applied defensively.
+   */
+  getInactiveSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesDelivery[]>;
+
+  /**
+   * API: GET /sales/v2/deliveries/retailer/active
+   *
+   * Phase 7 audit: 0 rows on this license. Wide window applied defensively.
+   * Retailer deliveries may have additional fields vs standard sales deliveries.
+   */
+  getActiveRetailerSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesRetailerDelivery[]>;
+
+  /**
+   * API: GET /sales/v2/deliveries/retailer/inactive
+   *
+   * Phase 7 audit: 0 rows on this license. Wide window applied defensively.
+   */
+  getInactiveRetailerSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesRetailerDelivery[]>;
+
+  /**
+   * API: GET /sales/v2/receipts/inactive
+   *
+   * Phase 7 audit: QUIRKED (bare 181 vs windowed 9822). Window REQUIRED;
+   * mirrors getActiveSalesReceipts exactly with boundary guard.
+   */
+  getInactiveSalesReceipts(window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]>;
+
+  /**
+   * API: GET /sales/v2/receipts/external/{externalNumber}
+   *
+   * Single-object lookup by the external receipt number. The externalNumber
+   * is URL-encoded into the path. Returns the same shape as getSalesReceiptById.
+   */
+  getSalesReceiptByExternalNumber(externalNumber: string): Promise<MetrcSalesReceiptDetail>;
+
+  /**
+   * API: GET /sales/v2/deliveries/{id}
+   *
+   * NOTE: Returns HTTP 401 on the current license. URL pattern implemented;
+   * live shape unverified. Schema is permissive pending license access.
+   */
+  getSalesDeliveryById(id: number): Promise<MetrcSalesDelivery>;
+
+  /**
+   * API: GET /sales/v2/deliveries/retailer/{id}
+   *
+   * NOTE: Returns HTTP 401 on the current license. URL pattern implemented;
+   * live shape unverified. Schema is permissive pending license access.
+   */
+  getRetailerSalesDeliveryById(id: number): Promise<MetrcSalesRetailerDelivery>;
 
   /** API: GET /strains/v2/active (LastModified-quirk) */
   getActiveStrains(): Promise<MetrcStrain[]>;

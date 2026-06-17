@@ -8,12 +8,16 @@ import type {
   MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
+  MetrcSalesPatientRegistrationLocation, MetrcSalesDeliveryReturnReason,
+  MetrcSalesCounty, MetrcSalesPaymentType, MetrcSalesDelivery, MetrcSalesRetailerDelivery,
 } from "../src/schemas/index.js";
 import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
   metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
+  metrcSalesPatientRegistrationLocationSchema, metrcSalesDeliveryReturnReasonSchema,
+  metrcSalesCountySchema, metrcSalesPaymentTypeSchema, metrcSalesDeliverySchema, metrcSalesRetailerDeliverySchema,
 } from "../src/schemas/index.js";
 
 const okEnvelope = (data: unknown[]) => ({
@@ -58,6 +62,18 @@ function makeLiveClientFromFixtures(
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>,
   itemCategories: MetrcItemCategory[],
   salesCustomerTypes: string[],
+  salesPatientRegistrationLocations: MetrcSalesPatientRegistrationLocation[],
+  salesDeliveryReturnReasons: MetrcSalesDeliveryReturnReason[],
+  salesCounties: MetrcSalesCounty[],
+  salesPaymentTypes: MetrcSalesPaymentType[],
+  activeSalesDeliveries: MetrcSalesDelivery[],
+  inactiveSalesDeliveries: MetrcSalesDelivery[],
+  activeRetailerSalesDeliveries: MetrcSalesRetailerDelivery[],
+  inactiveRetailerSalesDeliveries: MetrcSalesRetailerDelivery[],
+  inactiveSalesReceipts: MetrcSalesReceipt[],
+  salesReceiptByExternalNumber: Record<string, MetrcSalesReceiptDetail>,
+  salesDeliveryDetailsById: Record<number, MetrcSalesDelivery>,
+  retailerSalesDeliveryDetailsById: Record<number, MetrcSalesRetailerDelivery>,
   strains: MetrcStrain[],
   inactiveStrains: MetrcStrain[],
   strainDetailsById: Record<number, MetrcStrain>,
@@ -103,7 +119,44 @@ function makeLiveClientFromFixtures(
     if (url.includes("/packages/v2/active")) return okEnvelope(activePackages) as unknown as Response;
     if (url.includes("/items/v2/active")) return okEnvelope(items) as unknown as Response;
     if (url.includes("/sales/v2/customertypes")) return bareArray(salesCustomerTypes) as unknown as Response;
+    // Phase 7 sales expansion matchers — ordering follows spec (most-specific first)
+    if (url.includes("/sales/v2/patientregistration/locations")) {
+      return { ok: true, status: 200, headers: new Headers(), json: async () => salesPatientRegistrationLocations, text: async () => "" } as unknown as Response;
+    }
+    if (url.includes("/sales/v2/counties")) return okEnvelope(salesCounties) as unknown as Response;
+    if (url.includes("/sales/v2/paymenttypes")) return okEnvelope(salesPaymentTypes) as unknown as Response;
+    if (url.includes("/sales/v2/deliveries/returnreasons")) return okEnvelope(salesDeliveryReturnReasons) as unknown as Response;
+    // retailer/* must come before generic deliveries/* matchers
+    if (url.includes("/sales/v2/deliveries/retailer/active")) return okEnvelope(activeRetailerSalesDeliveries) as unknown as Response;
+    if (url.includes("/sales/v2/deliveries/retailer/inactive")) return okEnvelope(inactiveRetailerSalesDeliveries) as unknown as Response;
+    // retailer by-id MUST come before generic deliveries by-id
+    const retailerDeliveryDetailMatch = url.match(/\/sales\/v2\/deliveries\/retailer\/(\d+)(?:\?|$)/);
+    if (retailerDeliveryDetailMatch) {
+      const id = parseInt(retailerDeliveryDetailMatch[1]!, 10);
+      const delivery = retailerSalesDeliveryDetailsById[id];
+      if (!delivery) throw new Error(`fixture: no retailer sales delivery detail for id ${id}`);
+      return { ok: true, status: 200, headers: new Headers(), json: async () => delivery, text: async () => "" } as unknown as Response;
+    }
+    if (url.includes("/sales/v2/deliveries/active")) return okEnvelope(activeSalesDeliveries) as unknown as Response;
+    if (url.includes("/sales/v2/deliveries/inactive")) return okEnvelope(inactiveSalesDeliveries) as unknown as Response;
+    // generic deliveries by-id AFTER retailer by-id
+    const salesDeliveryDetailMatch = url.match(/\/sales\/v2\/deliveries\/(\d+)(?:\?|$)/);
+    if (salesDeliveryDetailMatch) {
+      const id = parseInt(salesDeliveryDetailMatch[1]!, 10);
+      const delivery = salesDeliveryDetailsById[id];
+      if (!delivery) throw new Error(`fixture: no sales delivery detail for id ${id}`);
+      return { ok: true, status: 200, headers: new Headers(), json: async () => delivery, text: async () => "" } as unknown as Response;
+    }
     if (url.includes("/sales/v2/receipts/active")) return okEnvelope(salesReceipts) as unknown as Response;
+    if (url.includes("/sales/v2/receipts/inactive")) return okEnvelope(inactiveSalesReceipts) as unknown as Response;
+    // receipts/external/{externalNumber} MUST come before receipts by-id regex
+    if (url.includes("/sales/v2/receipts/external/")) {
+      const extNum = decodeURIComponent(url.split("/sales/v2/receipts/external/")[1]!.split("?")[0]!);
+      const detail = salesReceiptByExternalNumber[extNum];
+      if (!detail) throw new Error(`fixture: no sales receipt for external number ${extNum}`);
+      return { ok: true, status: 200, headers: new Headers(), json: async () => detail, text: async () => "" } as unknown as Response;
+    }
+    // receipts by-id MUST stay AFTER external and inactive matchers
     const receiptDetailMatch = url.match(/\/sales\/v2\/receipts\/(\d+)(?:\?|$)/);
     if (receiptDetailMatch) {
       const id = parseInt(receiptDetailMatch[1]!, 10);
@@ -204,6 +257,18 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.salesReceiptDetailsById,
     fixtures.itemCategories,
     fixtures.salesCustomerTypes,
+    fixtures.salesPatientRegistrationLocations,
+    fixtures.salesDeliveryReturnReasons,
+    fixtures.salesCounties,
+    fixtures.salesPaymentTypes,
+    fixtures.activeSalesDeliveries,
+    fixtures.inactiveSalesDeliveries,
+    fixtures.activeRetailerSalesDeliveries,
+    fixtures.inactiveRetailerSalesDeliveries,
+    fixtures.inactiveSalesReceipts,
+    fixtures.salesReceiptByExternalNumber,
+    fixtures.salesDeliveryDetailsById,
+    fixtures.retailerSalesDeliveryDetailsById,
     fixtures.strains,
     fixtures.inactiveStrains,
     fixtures.strainDetailsById,
@@ -469,5 +534,97 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const expected = fixtures.sourceHarvestsByPackageId[knownId] ?? [];
     expect(result.length).toBe(expected.length);
     for (const h of result) expect(() => metrcPackageSourceHarvestSchema.parse(h)).not.toThrow();
+  });
+
+  // ── Phase 7 sales expansion conformance ─────────────────────────────────────
+
+  it("getSalesPatientRegistrationLocations returns locations that parse as MetrcSalesPatientRegistrationLocation", async () => {
+    const client = makeClient();
+    const result = await client.getSalesPatientRegistrationLocations();
+    expect(result.length).toBe(fixtures.salesPatientRegistrationLocations.length);
+    for (const loc of result) expect(() => metrcSalesPatientRegistrationLocationSchema.parse(loc)).not.toThrow();
+  });
+
+  it("getSalesDeliveryReturnReasons returns reasons that parse as MetrcSalesDeliveryReturnReason", async () => {
+    const client = makeClient();
+    const result = await client.getSalesDeliveryReturnReasons();
+    expect(result.length).toBe(fixtures.salesDeliveryReturnReasons.length);
+    for (const reason of result) expect(() => metrcSalesDeliveryReturnReasonSchema.parse(reason)).not.toThrow();
+  });
+
+  it("getSalesCounties returns counties that parse as MetrcSalesCounty", async () => {
+    const client = makeClient();
+    const result = await client.getSalesCounties();
+    expect(result.length).toBe(fixtures.salesCounties.length);
+    for (const county of result) expect(() => metrcSalesCountySchema.parse(county)).not.toThrow();
+  });
+
+  it("getSalesPaymentTypes returns payment types that parse as MetrcSalesPaymentType", async () => {
+    const client = makeClient();
+    const result = await client.getSalesPaymentTypes();
+    expect(result.length).toBe(fixtures.salesPaymentTypes.length);
+    for (const pt of result) expect(() => metrcSalesPaymentTypeSchema.parse(pt)).not.toThrow();
+  });
+
+  it("getActiveSalesDeliveries returns deliveries that parse as MetrcSalesDelivery", async () => {
+    const client = makeClient();
+    const result = await client.getActiveSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(fixtures.activeSalesDeliveries.length);
+    for (const d of result) expect(() => metrcSalesDeliverySchema.parse(d)).not.toThrow();
+  });
+
+  it("getInactiveSalesDeliveries returns deliveries that parse as MetrcSalesDelivery", async () => {
+    const client = makeClient();
+    const result = await client.getInactiveSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(fixtures.inactiveSalesDeliveries.length);
+    for (const d of result) expect(() => metrcSalesDeliverySchema.parse(d)).not.toThrow();
+  });
+
+  it("getActiveRetailerSalesDeliveries returns deliveries that parse as MetrcSalesRetailerDelivery", async () => {
+    const client = makeClient();
+    const result = await client.getActiveRetailerSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(fixtures.activeRetailerSalesDeliveries.length);
+    for (const d of result) expect(() => metrcSalesRetailerDeliverySchema.parse(d)).not.toThrow();
+  });
+
+  it("getInactiveRetailerSalesDeliveries returns deliveries that parse as MetrcSalesRetailerDelivery", async () => {
+    const client = makeClient();
+    const result = await client.getInactiveRetailerSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(fixtures.inactiveRetailerSalesDeliveries.length);
+    for (const d of result) expect(() => metrcSalesRetailerDeliverySchema.parse(d)).not.toThrow();
+  });
+
+  it("getInactiveSalesReceipts returns receipts that parse as MetrcSalesReceipt", async () => {
+    const client = makeClient();
+    const result = await client.getInactiveSalesReceipts({ lastModifiedStart: "2025-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(fixtures.inactiveSalesReceipts.length);
+    for (const r of result) expect(() => metrcSalesReceiptSchema.parse(r)).not.toThrow();
+  });
+
+  it("getSalesReceiptByExternalNumber returns a detail that parses as MetrcSalesReceiptDetail", async () => {
+    const client = makeClient();
+    const knownExtNum = Object.keys(fixtures.salesReceiptByExternalNumber)[0]!;
+    expect(knownExtNum).toBeTruthy();
+    const detail = await client.getSalesReceiptByExternalNumber(knownExtNum);
+    expect(() => metrcSalesReceiptDetailSchema.parse(detail)).not.toThrow();
+    expect(detail.Id).toBe(fixtures.salesReceiptByExternalNumber[knownExtNum]!.Id);
+  });
+
+  it("getSalesDeliveryById returns a delivery that parses as MetrcSalesDelivery", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.salesDeliveryDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const delivery = await client.getSalesDeliveryById(knownId);
+    expect(delivery.Id).toBe(knownId);
+    expect(() => metrcSalesDeliverySchema.parse(delivery)).not.toThrow();
+  });
+
+  it("getRetailerSalesDeliveryById returns a delivery that parses as MetrcSalesRetailerDelivery", async () => {
+    const client = makeClient();
+    const knownId = Number(Object.keys(fixtures.retailerSalesDeliveryDetailsById)[0]);
+    expect(Number.isFinite(knownId)).toBe(true);
+    const delivery = await client.getRetailerSalesDeliveryById(knownId);
+    expect(delivery.Id).toBe(knownId);
+    expect(() => metrcSalesRetailerDeliverySchema.parse(delivery)).not.toThrow();
   });
 });

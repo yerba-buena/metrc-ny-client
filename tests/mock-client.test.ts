@@ -5,6 +5,8 @@ import {
   metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
+  metrcSalesPatientRegistrationLocationSchema, metrcSalesDeliveryReturnReasonSchema,
+  metrcSalesCountySchema, metrcSalesPaymentTypeSchema, metrcSalesDeliverySchema, metrcSalesRetailerDeliverySchema,
 } from "../src/schemas/index.js";
 
 describe("createMockMetrcClient", () => {
@@ -62,6 +64,18 @@ describe("createMockMetrcClient", () => {
       salesReceiptDetailsById: {},
       itemCategories: [],
       salesCustomerTypes: [],
+      salesPatientRegistrationLocations: [],
+      salesDeliveryReturnReasons: [],
+      salesCounties: [],
+      salesPaymentTypes: [],
+      activeSalesDeliveries: [],
+      inactiveSalesDeliveries: [],
+      activeRetailerSalesDeliveries: [],
+      inactiveRetailerSalesDeliveries: [],
+      inactiveSalesReceipts: [],
+      salesReceiptByExternalNumber: {},
+      salesDeliveryDetailsById: {},
+      retailerSalesDeliveryDetailsById: {},
       strains: [],
       inactiveStrains: [],
       strainDetailsById: {},
@@ -555,5 +569,107 @@ describe("createMockMetrcClient", () => {
     expect(await client.getActiveStrains()).toEqual([]);
     expect(await client.getLocationTypes()).toEqual([]);
     expect(await client.getActiveSublocations()).toEqual([]);
+  });
+
+  // ── Phase 7 sales expansion mock tests ─────────────────────────────────────
+
+  it("getSalesPatientRegistrationLocations returns default locations that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getSalesPatientRegistrationLocations();
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.salesPatientRegistrationLocations.length);
+    for (const loc of result) expect(() => metrcSalesPatientRegistrationLocationSchema.parse(loc)).not.toThrow();
+  });
+
+  it("getSalesDeliveryReturnReasons returns default reasons that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getSalesDeliveryReturnReasons();
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.salesDeliveryReturnReasons.length);
+    for (const reason of result) expect(() => metrcSalesDeliveryReturnReasonSchema.parse(reason)).not.toThrow();
+  });
+
+  it("getSalesCounties returns default counties that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getSalesCounties();
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.salesCounties.length);
+    for (const county of result) expect(() => metrcSalesCountySchema.parse(county)).not.toThrow();
+  });
+
+  it("getSalesPaymentTypes returns default payment types that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getSalesPaymentTypes();
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.salesPaymentTypes.length);
+    for (const pt of result) expect(() => metrcSalesPaymentTypeSchema.parse(pt)).not.toThrow();
+  });
+
+  it("getActiveSalesDeliveries returns default deliveries that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getActiveSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.activeSalesDeliveries.length);
+    for (const d of result) expect(() => metrcSalesDeliverySchema.parse(d)).not.toThrow();
+  });
+
+  it("getInactiveSalesDeliveries returns empty array from default fixtures", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getInactiveSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result).toEqual([]);
+  });
+
+  it("getActiveRetailerSalesDeliveries returns default retailer deliveries that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getActiveRetailerSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.activeRetailerSalesDeliveries.length);
+    for (const d of result) expect(() => metrcSalesRetailerDeliverySchema.parse(d)).not.toThrow();
+  });
+
+  it("getInactiveRetailerSalesDeliveries returns empty array from default fixtures", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getInactiveRetailerSalesDeliveries({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result).toEqual([]);
+  });
+
+  it("getInactiveSalesReceipts returns default inactive receipts that parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const result = await client.getInactiveSalesReceipts({ lastModifiedStart: "2025-01-01T00:00:00Z", lastModifiedEnd: "2026-12-31T23:59:59Z" });
+    expect(result.length).toBe(DEFAULT_MOCK_FIXTURES.inactiveSalesReceipts.length);
+    for (const r of result) expect(() => metrcSalesReceiptSchema.parse(r)).not.toThrow();
+  });
+
+  it("getSalesReceiptByExternalNumber returns the receipt detail for a known external number", async () => {
+    const client = createMockMetrcClient();
+    const knownExtNum = Object.keys(DEFAULT_MOCK_FIXTURES.salesReceiptByExternalNumber)[0]!;
+    const result = await client.getSalesReceiptByExternalNumber(knownExtNum);
+    expect(result.Id).toBe(DEFAULT_MOCK_FIXTURES.salesReceiptByExternalNumber[knownExtNum]!.Id);
+    expect(() => metrcSalesReceiptDetailSchema.parse(result)).not.toThrow();
+  });
+
+  it("getSalesReceiptByExternalNumber throws for an unknown external number", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getSalesReceiptByExternalNumber("unknown-ext-num")).rejects.toThrow(/no sales receipt fixture/);
+  });
+
+  it("getSalesDeliveryById returns the delivery for a known id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.salesDeliveryDetailsById)[0]);
+    const result = await client.getSalesDeliveryById(knownId);
+    expect(result.Id).toBe(knownId);
+    expect(() => metrcSalesDeliverySchema.parse(result)).not.toThrow();
+  });
+
+  it("getSalesDeliveryById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getSalesDeliveryById(999999)).rejects.toThrow(/no sales delivery fixture/);
+  });
+
+  it("getRetailerSalesDeliveryById returns the delivery for a known id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = Number(Object.keys(DEFAULT_MOCK_FIXTURES.retailerSalesDeliveryDetailsById)[0]);
+    const result = await client.getRetailerSalesDeliveryById(knownId);
+    expect(result.Id).toBe(knownId);
+    expect(() => metrcSalesRetailerDeliverySchema.parse(result)).not.toThrow();
+  });
+
+  it("getRetailerSalesDeliveryById throws for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    await expect(client.getRetailerSalesDeliveryById(999999)).rejects.toThrow(/no retailer sales delivery fixture/);
   });
 });

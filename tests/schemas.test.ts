@@ -5,6 +5,8 @@ import {
   metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema, metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
+  metrcSalesPatientRegistrationLocationSchema, metrcSalesDeliveryReturnReasonSchema,
+  metrcSalesCountySchema, metrcSalesPaymentTypeSchema, metrcSalesDeliverySchema, metrcSalesRetailerDeliverySchema,
 } from "../src/schemas/index.js";
 
 const sampleTransfer = {
@@ -640,5 +642,129 @@ describe("metrcPackageSourceHarvestSchema", () => {
   it("rejects a package source harvest with wrong type on Name", () => {
     const bad = { ...samplePackageSourceHarvest, Name: 123 };
     expect(() => metrcPackageSourceHarvestSchema.parse(bad)).toThrow();
+  });
+});
+
+// ── Phase 7 schemas ───────────────────────────────────────────────────────────
+
+const samplePatientRegistrationLocation = { Id: 1, Name: "Main Dispensary" };
+
+describe("metrcSalesPatientRegistrationLocationSchema", () => {
+  it("parses a well-formed patient registration location", () => {
+    expect(() => metrcSalesPatientRegistrationLocationSchema.parse(samplePatientRegistrationLocation)).not.toThrow();
+  });
+  it("rejects when Id is missing", () => {
+    const bad: Record<string, unknown> = { ...samplePatientRegistrationLocation };
+    delete bad.Id;
+    expect(() => metrcSalesPatientRegistrationLocationSchema.parse(bad)).toThrow();
+  });
+  it("rejects when Name is not a string", () => {
+    expect(() => metrcSalesPatientRegistrationLocationSchema.parse({ ...samplePatientRegistrationLocation, Name: 42 })).toThrow();
+  });
+  it("rejects when Id is not a number", () => {
+    expect(() => metrcSalesPatientRegistrationLocationSchema.parse({ ...samplePatientRegistrationLocation, Id: "one" })).toThrow();
+  });
+});
+
+const sampleDeliveryReturnReason = {
+  Name: "Damaged",
+  RequiresNote: true,
+  RequiresWasteWeight: false,
+  RequiresImmatureWasteWeight: false,
+  RequiresMatureWasteWeight: false,
+};
+
+describe("metrcSalesDeliveryReturnReasonSchema", () => {
+  it("parses a well-formed delivery return reason", () => {
+    expect(() => metrcSalesDeliveryReturnReasonSchema.parse(sampleDeliveryReturnReason)).not.toThrow();
+  });
+  it("rejects when Name is missing", () => {
+    const bad: Record<string, unknown> = { ...sampleDeliveryReturnReason };
+    delete bad.Name;
+    expect(() => metrcSalesDeliveryReturnReasonSchema.parse(bad)).toThrow();
+  });
+  it("rejects when RequiresNote is not a boolean", () => {
+    expect(() => metrcSalesDeliveryReturnReasonSchema.parse({ ...sampleDeliveryReturnReason, RequiresNote: "yes" })).toThrow();
+  });
+  it("rejects when RequiresWasteWeight is missing", () => {
+    const bad: Record<string, unknown> = { ...sampleDeliveryReturnReason };
+    delete bad.RequiresWasteWeight;
+    expect(() => metrcSalesDeliveryReturnReasonSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleSalesCounty = { Name: "New York" };
+
+describe("metrcSalesCountySchema", () => {
+  it("parses a well-formed county with just Name", () => {
+    expect(() => metrcSalesCountySchema.parse(sampleSalesCounty)).not.toThrow();
+  });
+  it("passes through unknown fields (permissive schema)", () => {
+    const withExtra = { ...sampleSalesCounty, Code: "NY-001", Population: 8400000 };
+    const parsed = metrcSalesCountySchema.parse(withExtra);
+    expect((parsed as Record<string, unknown>).Code).toBe("NY-001");
+  });
+  it("rejects when Name is missing", () => {
+    expect(() => metrcSalesCountySchema.parse({})).toThrow();
+  });
+  it("rejects when Name is not a string", () => {
+    expect(() => metrcSalesCountySchema.parse({ Name: 123 })).toThrow();
+  });
+});
+
+const sampleSalesPaymentType = { Name: "Cash" };
+
+describe("metrcSalesPaymentTypeSchema", () => {
+  it("parses a well-formed payment type with just Name", () => {
+    expect(() => metrcSalesPaymentTypeSchema.parse(sampleSalesPaymentType)).not.toThrow();
+  });
+  it("passes through unknown fields (permissive schema)", () => {
+    const withExtra = { ...sampleSalesPaymentType, Code: "CASH", IsElectronic: false };
+    const parsed = metrcSalesPaymentTypeSchema.parse(withExtra);
+    expect((parsed as Record<string, unknown>).IsElectronic).toBe(false);
+  });
+  it("rejects when Name is missing", () => {
+    expect(() => metrcSalesPaymentTypeSchema.parse({})).toThrow();
+  });
+  it("rejects when Name is not a string", () => {
+    expect(() => metrcSalesPaymentTypeSchema.parse({ Name: true })).toThrow();
+  });
+});
+
+const sampleSalesDelivery = { Id: 5001 };
+
+describe("metrcSalesDeliverySchema", () => {
+  it("parses a well-formed sales delivery with just Id", () => {
+    expect(() => metrcSalesDeliverySchema.parse(sampleSalesDelivery)).not.toThrow();
+  });
+  it("passes through unknown fields (permissive schema)", () => {
+    const withExtra = { Id: 5001, Status: "Active", DeliveryDate: "2026-06-01" };
+    const parsed = metrcSalesDeliverySchema.parse(withExtra);
+    expect((parsed as Record<string, unknown>).Status).toBe("Active");
+  });
+  it("rejects when Id is missing", () => {
+    expect(() => metrcSalesDeliverySchema.parse({})).toThrow();
+  });
+  it("rejects when Id is not a number", () => {
+    expect(() => metrcSalesDeliverySchema.parse({ Id: "abc" })).toThrow();
+  });
+});
+
+const sampleSalesRetailerDelivery = { Id: 6001 };
+
+describe("metrcSalesRetailerDeliverySchema", () => {
+  it("parses a well-formed retailer delivery with just Id", () => {
+    expect(() => metrcSalesRetailerDeliverySchema.parse(sampleSalesRetailerDelivery)).not.toThrow();
+  });
+  it("passes through unknown fields (permissive schema)", () => {
+    const withExtra = { Id: 6001, RetailerName: "Mock Store", Status: "Delivered" };
+    const parsed = metrcSalesRetailerDeliverySchema.parse(withExtra);
+    expect((parsed as Record<string, unknown>).RetailerName).toBe("Mock Store");
+  });
+  it("rejects when Id is missing", () => {
+    expect(() => metrcSalesRetailerDeliverySchema.parse({})).toThrow();
+  });
+  it("rejects when Id is not a number", () => {
+    expect(() => metrcSalesRetailerDeliverySchema.parse({ Id: null })).toThrow();
   });
 });

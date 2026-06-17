@@ -229,10 +229,10 @@ describe("CLIENT_COVERAGE", () => {
     expect(transactions).toBeUndefined();
   });
 
-  it("lists sales expansion endpoints as planned", () => {
+  it("lists all Phase 7 sales expansion endpoints as complete", () => {
     const sales = CLIENT_COVERAGE.find((r) => r.resource === "sales")!;
     const byPath = Object.fromEntries(sales.endpoints.map(e => [e.path, e]));
-    const plannedPaths = [
+    const completedPaths = [
       "/sales/v2/patientregistration/locations",
       "/sales/v2/deliveries/{id}",
       "/sales/v2/deliveries/active",
@@ -246,14 +246,14 @@ describe("CLIENT_COVERAGE", () => {
       "/sales/v2/deliveries/retailer/inactive",
       "/sales/v2/deliveries/retailer/{id}",
     ];
-    for (const p of plannedPaths) {
-      expect(byPath[p]?.status, `${p} should be planned`).toBe("planned");
+    for (const p of completedPaths) {
+      expect(byPath[p]?.status, `${p} should be complete`).toBe("complete");
     }
   });
 
-  it("keeps sales resource status as partial", () => {
+  it("marks sales resource as complete (all 15 documented endpoints implemented)", () => {
     const sales = CLIENT_COVERAGE.find((r) => r.resource === "sales")!;
-    expect(sales.status).toBe("partial");
+    expect(sales.status).toBe("complete");
   });
 
   it("lists labtests resource with 5 planned endpoints including batches and labtestdocument", () => {

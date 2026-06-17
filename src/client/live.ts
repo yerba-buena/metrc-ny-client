@@ -7,12 +7,16 @@ import {
   metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
+  metrcSalesPatientRegistrationLocationSchema, metrcSalesDeliveryReturnReasonSchema,
+  metrcSalesCountySchema, metrcSalesPaymentTypeSchema, metrcSalesDeliverySchema, metrcSalesRetailerDeliverySchema,
 } from "../schemas/index.js";
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
+  MetrcSalesPatientRegistrationLocation, MetrcSalesDeliveryReturnReason,
+  MetrcSalesCounty, MetrcSalesPaymentType, MetrcSalesDelivery, MetrcSalesRetailerDelivery,
 } from "../schemas/index.js";
 import { MetrcResponseError } from "../errors.js";
 import { NOOP_LOGGER } from "../logger.js";
@@ -435,6 +439,234 @@ export function createLiveMetrcClient(config: MetrcConfig): MetrcClient {
       const endpoint = "/sales/v2/customertypes";
       const data = await requestArray<unknown>(request, endpoint);
       return validateArray(z.string(), data, endpoint);
+    },
+
+    /** API: GET /sales/v2/patientregistration/locations */
+    async getSalesPatientRegistrationLocations(): Promise<MetrcSalesPatientRegistrationLocation[]> {
+      const endpoint = "/sales/v2/patientregistration/locations";
+      const data = await requestArray<unknown>(request, endpoint);
+      return validateArray(metrcSalesPatientRegistrationLocationSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/returnreasons
+     *
+     * Paginated endpoint; no date window required.
+     */
+    async getSalesDeliveryReturnReasons(): Promise<MetrcSalesDeliveryReturnReason[]> {
+      const endpoint = "/sales/v2/deliveries/returnreasons";
+      const data = await fetchAllPages<MetrcSalesDeliveryReturnReason>(
+        paged<MetrcSalesDeliveryReturnReason>(endpoint),
+        endpoint,
+      );
+      return validateArray(metrcSalesDeliveryReturnReasonSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/counties
+     *
+     * NOTE: Returns HTTP 401 on the current license; live shape unverified.
+     * Implemented as paginated per standard METRC list pattern.
+     */
+    async getSalesCounties(): Promise<MetrcSalesCounty[]> {
+      const endpoint = "/sales/v2/counties";
+      const data = await fetchAllPages<MetrcSalesCounty>(
+        paged<MetrcSalesCounty>(endpoint),
+        endpoint,
+      );
+      return validateArray(metrcSalesCountySchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/paymenttypes
+     *
+     * NOTE: Returns HTTP 401 on the current license; live shape unverified.
+     * Implemented as paginated per standard METRC list pattern.
+     */
+    async getSalesPaymentTypes(): Promise<MetrcSalesPaymentType[]> {
+      const endpoint = "/sales/v2/paymenttypes";
+      const data = await fetchAllPages<MetrcSalesPaymentType>(
+        paged<MetrcSalesPaymentType>(endpoint),
+        endpoint,
+      );
+      return validateArray(metrcSalesPaymentTypeSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/active
+     *
+     * Phase 7 audit: INCONCLUSIVE (0 rows). Window applied defensively.
+     * Boundary guard prevents silent empty-list from missing window.
+     */
+    async getActiveSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesDelivery[]> {
+      const endpoint = "/sales/v2/deliveries/active";
+      if (
+        !window ||
+        typeof window.lastModifiedStart !== "string" ||
+        typeof window.lastModifiedEnd !== "string" ||
+        window.lastModifiedStart.length === 0 ||
+        window.lastModifiedEnd.length === 0
+      ) {
+        throw new TypeError(
+          "getActiveSalesDeliveries requires { lastModifiedStart, lastModifiedEnd } as non-empty ISO-8601 strings",
+        );
+      }
+      const data = await fetchAllPages<MetrcSalesDelivery>(
+        paged<MetrcSalesDelivery>(endpoint, {
+          lastModifiedStart: window.lastModifiedStart,
+          lastModifiedEnd: window.lastModifiedEnd,
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSalesDeliverySchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/inactive
+     *
+     * Phase 7 audit: INCONCLUSIVE (0 rows). Window applied defensively.
+     */
+    async getInactiveSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesDelivery[]> {
+      const endpoint = "/sales/v2/deliveries/inactive";
+      if (
+        !window ||
+        typeof window.lastModifiedStart !== "string" ||
+        typeof window.lastModifiedEnd !== "string" ||
+        window.lastModifiedStart.length === 0 ||
+        window.lastModifiedEnd.length === 0
+      ) {
+        throw new TypeError(
+          "getInactiveSalesDeliveries requires { lastModifiedStart, lastModifiedEnd } as non-empty ISO-8601 strings",
+        );
+      }
+      const data = await fetchAllPages<MetrcSalesDelivery>(
+        paged<MetrcSalesDelivery>(endpoint, {
+          lastModifiedStart: window.lastModifiedStart,
+          lastModifiedEnd: window.lastModifiedEnd,
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSalesDeliverySchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/retailer/active
+     *
+     * Phase 7 audit: INCONCLUSIVE (0 rows). Window applied defensively.
+     */
+    async getActiveRetailerSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesRetailerDelivery[]> {
+      const endpoint = "/sales/v2/deliveries/retailer/active";
+      if (
+        !window ||
+        typeof window.lastModifiedStart !== "string" ||
+        typeof window.lastModifiedEnd !== "string" ||
+        window.lastModifiedStart.length === 0 ||
+        window.lastModifiedEnd.length === 0
+      ) {
+        throw new TypeError(
+          "getActiveRetailerSalesDeliveries requires { lastModifiedStart, lastModifiedEnd } as non-empty ISO-8601 strings",
+        );
+      }
+      const data = await fetchAllPages<MetrcSalesRetailerDelivery>(
+        paged<MetrcSalesRetailerDelivery>(endpoint, {
+          lastModifiedStart: window.lastModifiedStart,
+          lastModifiedEnd: window.lastModifiedEnd,
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSalesRetailerDeliverySchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/retailer/inactive
+     *
+     * Phase 7 audit: INCONCLUSIVE (0 rows). Window applied defensively.
+     */
+    async getInactiveRetailerSalesDeliveries(window: SalesReceiptsWindow): Promise<MetrcSalesRetailerDelivery[]> {
+      const endpoint = "/sales/v2/deliveries/retailer/inactive";
+      if (
+        !window ||
+        typeof window.lastModifiedStart !== "string" ||
+        typeof window.lastModifiedEnd !== "string" ||
+        window.lastModifiedStart.length === 0 ||
+        window.lastModifiedEnd.length === 0
+      ) {
+        throw new TypeError(
+          "getInactiveRetailerSalesDeliveries requires { lastModifiedStart, lastModifiedEnd } as non-empty ISO-8601 strings",
+        );
+      }
+      const data = await fetchAllPages<MetrcSalesRetailerDelivery>(
+        paged<MetrcSalesRetailerDelivery>(endpoint, {
+          lastModifiedStart: window.lastModifiedStart,
+          lastModifiedEnd: window.lastModifiedEnd,
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSalesRetailerDeliverySchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/receipts/inactive
+     *
+     * Phase 7 audit: QUIRKED (bare 181 vs windowed 9822). Window REQUIRED.
+     * Mirrors getActiveSalesReceipts exactly with boundary guard.
+     */
+    async getInactiveSalesReceipts(window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]> {
+      const endpoint = "/sales/v2/receipts/inactive";
+      if (
+        !window ||
+        typeof window.lastModifiedStart !== "string" ||
+        typeof window.lastModifiedEnd !== "string" ||
+        window.lastModifiedStart.length === 0 ||
+        window.lastModifiedEnd.length === 0
+      ) {
+        throw new TypeError(
+          "getInactiveSalesReceipts requires { lastModifiedStart, lastModifiedEnd } as non-empty ISO-8601 strings",
+        );
+      }
+      const data = await fetchAllPages<MetrcSalesReceipt>(
+        paged<MetrcSalesReceipt>(endpoint, {
+          lastModifiedStart: window.lastModifiedStart,
+          lastModifiedEnd: window.lastModifiedEnd,
+        }),
+        endpoint,
+      );
+      return validateArray(metrcSalesReceiptSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/receipts/external/{externalNumber}
+     *
+     * Single-object lookup by external receipt number.
+     * The externalNumber is URL-encoded into the path.
+     */
+    async getSalesReceiptByExternalNumber(externalNumber: string): Promise<MetrcSalesReceiptDetail> {
+      const encoded = encodeURIComponent(externalNumber);
+      const endpoint = `/sales/v2/receipts/external/${encoded}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcSalesReceiptDetailSchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/{id}
+     *
+     * NOTE: Returns HTTP 401 on the current license; live shape unverified.
+     */
+    async getSalesDeliveryById(id: number): Promise<MetrcSalesDelivery> {
+      const endpoint = `/sales/v2/deliveries/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcSalesDeliverySchema, data, endpoint);
+    },
+
+    /**
+     * API: GET /sales/v2/deliveries/retailer/{id}
+     *
+     * NOTE: Returns HTTP 401 on the current license; live shape unverified.
+     */
+    async getRetailerSalesDeliveryById(id: number): Promise<MetrcSalesRetailerDelivery> {
+      const endpoint = `/sales/v2/deliveries/retailer/${id}`;
+      const data = await request<unknown>(endpoint, {});
+      return validateOne(metrcSalesRetailerDeliverySchema, data, endpoint);
     },
 
     /**

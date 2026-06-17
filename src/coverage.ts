@@ -147,24 +147,29 @@ export const CLIENT_COVERAGE: readonly ResourceCoverage[] = Object.freeze([
   // ── sales ─────────────────────────────────────────────────────────────────
   Object.freeze({
     resource: "sales",
-    status: "partial" as const,
+    status: "complete" as const,
     hasWrites: true,
     endpoints: [
       { path: "/sales/v2/receipts/active", method: "GET" as const, clientMethod: "getActiveSalesReceipts", status: "complete" as const },
       { path: "/sales/v2/receipts/{id}", method: "GET" as const, clientMethod: "getSalesReceiptById", status: "complete" as const },
       { path: "/sales/v2/customertypes", method: "GET" as const, clientMethod: "getSalesCustomerTypes", status: "complete" as const },
-      { path: "/sales/v2/patientregistration/locations", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/{id}", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/active", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/inactive", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/returnreasons", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/counties", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/paymenttypes", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/receipts/external/{externalNumber}", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/receipts/inactive", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/retailer/active", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/retailer/inactive", method: "GET" as const, clientMethod: null, status: "planned" as const },
-      { path: "/sales/v2/deliveries/retailer/{id}", method: "GET" as const, clientMethod: null, status: "planned" as const },
+      { path: "/sales/v2/patientregistration/locations", method: "GET" as const, clientMethod: "getSalesPatientRegistrationLocations", status: "complete" as const },
+      // Note: /sales/v2/deliveries/{id} returns 401 on the current license; URL pattern implemented, live shape unverified.
+      { path: "/sales/v2/deliveries/{id}", method: "GET" as const, clientMethod: "getSalesDeliveryById", status: "complete" as const },
+      { path: "/sales/v2/deliveries/active", method: "GET" as const, clientMethod: "getActiveSalesDeliveries", status: "complete" as const },
+      { path: "/sales/v2/deliveries/inactive", method: "GET" as const, clientMethod: "getInactiveSalesDeliveries", status: "complete" as const },
+      { path: "/sales/v2/deliveries/returnreasons", method: "GET" as const, clientMethod: "getSalesDeliveryReturnReasons", status: "complete" as const },
+      // Note: /sales/v2/counties returns 401 on the current license; URL pattern implemented, live shape unverified.
+      { path: "/sales/v2/counties", method: "GET" as const, clientMethod: "getSalesCounties", status: "complete" as const },
+      // Note: /sales/v2/paymenttypes returns 401 on the current license; URL pattern implemented, live shape unverified.
+      { path: "/sales/v2/paymenttypes", method: "GET" as const, clientMethod: "getSalesPaymentTypes", status: "complete" as const },
+      { path: "/sales/v2/receipts/external/{externalNumber}", method: "GET" as const, clientMethod: "getSalesReceiptByExternalNumber", status: "complete" as const },
+      // Note: receipts/inactive is QUIRKED (bare 181 vs windowed 9822); wide window required.
+      { path: "/sales/v2/receipts/inactive", method: "GET" as const, clientMethod: "getInactiveSalesReceipts", status: "complete" as const },
+      { path: "/sales/v2/deliveries/retailer/active", method: "GET" as const, clientMethod: "getActiveRetailerSalesDeliveries", status: "complete" as const },
+      { path: "/sales/v2/deliveries/retailer/inactive", method: "GET" as const, clientMethod: "getInactiveRetailerSalesDeliveries", status: "complete" as const },
+      // Note: /sales/v2/deliveries/retailer/{id} returns 401 on the current license; URL pattern implemented, live shape unverified.
+      { path: "/sales/v2/deliveries/retailer/{id}", method: "GET" as const, clientMethod: "getRetailerSalesDeliveryById", status: "complete" as const },
     ] as const,
   } as const),
 
