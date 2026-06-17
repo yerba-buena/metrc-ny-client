@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcDeliverySchema,
   metrcLocationSchema, metrcActivePackageSchema, metrcPackageAdjustReasonSchema,
+  metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema, metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../src/schemas/index.js";
@@ -544,5 +545,100 @@ describe("metrcSublocationSchema", () => {
   it("rejects a sublocation with wrong type on LocationId", () => {
     const bad = { ...sampleSublocation, LocationId: "not-a-number" };
     expect(() => metrcSublocationSchema.parse(bad)).toThrow();
+  });
+});
+
+const samplePackageAdjustment = {
+  PackageId: 5001,
+  PackageLabel: "1A4FF0300000001000000001",
+  ItemName: "Blue Dream 3.5g",
+  ItemCategoryName: "Flower",
+  PackagedDate: "2026-04-20",
+  PackageLabTestResultExpirationDateTime: null,
+  AdjustmentDate: "2026-04-25",
+  AdjustmentQuantity: 5,
+  AdjustmentUnitOfMeasureName: "Each",
+  AdjustmentUnitOfMeasureAbbreviation: "ea",
+  AdjustmentReasonName: "Spoilage",
+  AdjustmentNote: "Damaged units",
+  AdjustedByUserName: "jane-doe",
+};
+
+describe("metrcPackageAdjustmentSchema", () => {
+  it("parses a well-formed package adjustment", () => {
+    expect(() => metrcPackageAdjustmentSchema.parse(samplePackageAdjustment)).not.toThrow();
+  });
+  it("rejects a package adjustment missing PackageLabel", () => {
+    const bad: Record<string, unknown> = { ...samplePackageAdjustment };
+    delete bad.PackageLabel;
+    expect(() => metrcPackageAdjustmentSchema.parse(bad)).toThrow();
+  });
+  it("rejects a package adjustment with wrong type on AdjustmentQuantity", () => {
+    const bad = { ...samplePackageAdjustment, AdjustmentQuantity: "not-a-number" };
+    expect(() => metrcPackageAdjustmentSchema.parse(bad)).toThrow();
+  });
+});
+
+const sampleTransferredPackage = {
+  Id: 100,
+  PackageId: 5002,
+  PackageLabel: "1A4FF0300000001000000002",
+  ManifestNumber: "M-2026-001",
+  ProductName: "Blue Dream 3.5g",
+  ProductCategoryName: "Flower",
+  ItemStrainName: "Blue Dream",
+  SourceHarvestNames: "Harvest 2026.04",
+  SourcePackageLabels: "1A4FF0300000001000000000",
+  RecipientFacilityLicenseNumber: "OCM-RET-1",
+  RecipientFacilityName: "Yerba Buena",
+  ReceivedDateTime: "2026-04-28T10:00:00Z",
+  ReceivedQuantity: 50,
+  ReceivedUnitOfMeasureAbbreviation: "ea",
+  ShippedQuantity: 50,
+  ShippedUnitOfMeasureAbbreviation: "ea",
+  ShipmentPackageStateName: "Accepted",
+  LabTestingStateName: "TestPassed",
+  ActualDepartureDateTime: null,
+  ExternalId: null,
+  GrossWeight: null,
+  GrossUnitOfWeightAbbreviation: null,
+  ShipperWholesalePrice: null,
+  ReceiverWholesalePrice: null,
+  ProcessingJobTypeName: null,
+  ContainsPreTreatedProduct: false,
+  PreTreatmentDate: null,
+};
+
+describe("metrcTransferredPackageSchema", () => {
+  it("parses a well-formed transferred package", () => {
+    expect(() => metrcTransferredPackageSchema.parse(sampleTransferredPackage)).not.toThrow();
+  });
+  it("rejects a transferred package missing ManifestNumber", () => {
+    const bad: Record<string, unknown> = { ...sampleTransferredPackage };
+    delete bad.ManifestNumber;
+    expect(() => metrcTransferredPackageSchema.parse(bad)).toThrow();
+  });
+  it("rejects a transferred package with wrong type on ReceivedQuantity", () => {
+    const bad = { ...sampleTransferredPackage, ReceivedQuantity: "not-a-number" };
+    expect(() => metrcTransferredPackageSchema.parse(bad)).toThrow();
+  });
+});
+
+const samplePackageSourceHarvest = {
+  Name: "Harvest 2026.04",
+};
+
+describe("metrcPackageSourceHarvestSchema", () => {
+  it("parses a well-formed package source harvest", () => {
+    expect(() => metrcPackageSourceHarvestSchema.parse(samplePackageSourceHarvest)).not.toThrow();
+  });
+  it("rejects a package source harvest missing Name", () => {
+    const bad: Record<string, unknown> = { ...samplePackageSourceHarvest };
+    delete bad.Name;
+    expect(() => metrcPackageSourceHarvestSchema.parse(bad)).toThrow();
+  });
+  it("rejects a package source harvest with wrong type on Name", () => {
+    const bad = { ...samplePackageSourceHarvest, Name: 123 };
+    expect(() => metrcPackageSourceHarvestSchema.parse(bad)).toThrow();
   });
 });

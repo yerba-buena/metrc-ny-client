@@ -5,12 +5,13 @@ import { NOOP_LOGGER } from "../src/logger.js";
 import type { MetrcClient } from "../src/client/interface.js";
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../src/schemas/index.js";
 import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
-  metrcPackageAdjustReasonSchema,
+  metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../src/schemas/index.js";
@@ -45,6 +46,11 @@ function makeLiveClientFromFixtures(
   onHoldPackages: MetrcActivePackage[],
   packageTypes: string[],
   packageAdjustReasons: MetrcPackageAdjustReason[],
+  packageAdjustments: MetrcPackageAdjustment[],
+  transferredPackages: MetrcTransferredPackage[],
+  inTransitPackages: MetrcActivePackage[],
+  labSamplePackages: MetrcActivePackage[],
+  sourceHarvestsByPackageId: Record<number, MetrcPackageSourceHarvest[]>,
   packageDetailsById: Record<number, MetrcActivePackage>,
   packageDetailsByLabel: Record<string, MetrcActivePackage>,
   items: MetrcItem[],
@@ -66,6 +72,18 @@ function makeLiveClientFromFixtures(
     if (url.includes("/items/v2/categories")) return okEnvelope(itemCategories) as unknown as Response;
     if (url.includes("/packages/v2/types")) return bareArray(packageTypes) as unknown as Response;
     if (url.includes("/packages/v2/adjust/reasons")) return okEnvelope(packageAdjustReasons) as unknown as Response;
+    // Phase 6 package expansion endpoints — must come BEFORE /packages/v2/active and before the by-id/by-label regex
+    if (url.includes("/packages/v2/adjustments")) return okEnvelope(packageAdjustments) as unknown as Response;
+    if (url.includes("/packages/v2/transferred")) return okEnvelope(transferredPackages) as unknown as Response;
+    if (url.includes("/packages/v2/intransit")) return okEnvelope(inTransitPackages) as unknown as Response;
+    if (url.includes("/packages/v2/labsamples")) return okEnvelope(labSamplePackages) as unknown as Response;
+    // source/harvests matcher MUST come BEFORE the by-id/by-label regexes:
+    const sourceHarvestsMatch = url.match(/\/packages\/v2\/(\d+)\/source\/harvests(?:\?|$)/);
+    if (sourceHarvestsMatch) {
+      const id = parseInt(sourceHarvestsMatch[1]!, 10);
+      const list = sourceHarvestsByPackageId[id] ?? [];
+      return { ok: true, status: 200, headers: new Headers(), json: async () => list, text: async () => "" } as unknown as Response;
+    }
     if (url.includes("/transfers/v2/types")) return okEnvelope(transferTypes) as unknown as Response;
     if (url.includes("/transfers/v2/outgoing")) return okEnvelope(outgoingTransfers) as unknown as Response;
     if (url.includes("/transfers/v2/rejected")) return okEnvelope(rejectedTransfers) as unknown as Response;
@@ -174,6 +192,11 @@ const variants: Array<[string, () => MetrcClient]> = [
     fixtures.onHoldPackages,
     fixtures.packageTypes,
     fixtures.packageAdjustReasons,
+    fixtures.packageAdjustments,
+    fixtures.transferredPackages,
+    fixtures.inTransitPackages,
+    fixtures.labSamplePackages,
+    fixtures.sourceHarvestsByPackageId,
     fixtures.packageDetailsById,
     fixtures.packageDetailsByLabel,
     fixtures.items,
@@ -409,5 +432,42 @@ describe.each(variants)("MetrcClient conformance — %s", (_name, makeClient) =>
     const location = await client.getLocationById(knownId);
     expect(location.Id).toBe(knownId);
     expect(() => metrcLocationSchema.parse(location)).not.toThrow();
+  });
+
+  it("getPackageAdjustments returns adjustments that parse as MetrcPackageAdjustment", async () => {
+    const client = makeClient();
+    const result = await client.getPackageAdjustments();
+    expect(result.length).toBe(fixtures.packageAdjustments.length);
+    for (const adj of result) expect(() => metrcPackageAdjustmentSchema.parse(adj)).not.toThrow();
+  });
+
+  it("getTransferredPackages returns packages that parse as MetrcTransferredPackage", async () => {
+    const client = makeClient();
+    const result = await client.getTransferredPackages();
+    expect(result.length).toBe(fixtures.transferredPackages.length);
+    for (const pkg of result) expect(() => metrcTransferredPackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getInTransitPackages returns packages that parse as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const result = await client.getInTransitPackages();
+    expect(result.length).toBe(fixtures.inTransitPackages.length);
+    for (const pkg of result) expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getLabSamplePackages returns packages that parse as MetrcActivePackage", async () => {
+    const client = makeClient();
+    const result = await client.getLabSamplePackages();
+    expect(result.length).toBe(fixtures.labSamplePackages.length);
+    for (const pkg of result) expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getPackageSourceHarvests returns an array that parses as MetrcPackageSourceHarvest[]", async () => {
+    const client = makeClient();
+    const knownId = 5001; // DEFAULT_ACTIVE_PACKAGE_A.Id
+    const result = await client.getPackageSourceHarvests(knownId);
+    const expected = fixtures.sourceHarvestsByPackageId[knownId] ?? [];
+    expect(result.length).toBe(expected.length);
+    for (const h of result) expect(() => metrcPackageSourceHarvestSchema.parse(h)).not.toThrow();
   });
 });

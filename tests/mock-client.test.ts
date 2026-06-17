@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createMockMetrcClient, type MockFixtures, DEFAULT_MOCK_FIXTURES } from "../src/client/mock.js";
 import {
   metrcTransferSchema, metrcOutgoingTransferSchema, metrcTransferTypeSchema, metrcPackageSchema, metrcLocationSchema, metrcActivePackageSchema,
-  metrcPackageAdjustReasonSchema,
+  metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
 } from "../src/schemas/index.js";
@@ -50,6 +50,11 @@ describe("createMockMetrcClient", () => {
       onHoldPackages: [],
       packageTypes: [],
       packageAdjustReasons: [],
+      packageAdjustments: [],
+      transferredPackages: [],
+      inTransitPackages: [],
+      labSamplePackages: [],
+      sourceHarvestsByPackageId: {},
       packageDetailsById: {},
       packageDetailsByLabel: {},
       items: [],
@@ -446,9 +451,91 @@ describe("createMockMetrcClient", () => {
     await expect(client.getLocationById(999999)).rejects.toThrow(/no location fixture/);
   });
 
-  it("override-fixtures test: can override all nine new fixture groups with empty values", async () => {
+  it("default package adjustments parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const adjustments = await client.getPackageAdjustments();
+    for (const adj of adjustments) expect(() => metrcPackageAdjustmentSchema.parse(adj)).not.toThrow();
+  });
+
+  it("getPackageAdjustments returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getPackageAdjustments();
+    const b = await client.getPackageAdjustments();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default transferred packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const transferred = await client.getTransferredPackages();
+    for (const pkg of transferred) expect(() => metrcTransferredPackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getTransferredPackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getTransferredPackages();
+    const b = await client.getTransferredPackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default in-transit packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const inTransit = await client.getInTransitPackages();
+    for (const pkg of inTransit) expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getInTransitPackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getInTransitPackages();
+    const b = await client.getInTransitPackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("default lab sample packages parse against the Zod schema", async () => {
+    const client = createMockMetrcClient();
+    const labSamples = await client.getLabSamplePackages();
+    for (const pkg of labSamples) expect(() => metrcActivePackageSchema.parse(pkg)).not.toThrow();
+  });
+
+  it("getLabSamplePackages returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getLabSamplePackages();
+    const b = await client.getLabSamplePackages();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("getPackageSourceHarvests returns fixtures for a known package id", async () => {
+    const client = createMockMetrcClient();
+    const knownId = 5001; // DEFAULT_ACTIVE_PACKAGE_A.Id
+    const harvests = await client.getPackageSourceHarvests(knownId);
+    for (const h of harvests) expect(() => metrcPackageSourceHarvestSchema.parse(h)).not.toThrow();
+  });
+
+  it("getPackageSourceHarvests returns empty array for an unknown id", async () => {
+    const client = createMockMetrcClient();
+    const harvests = await client.getPackageSourceHarvests(999999);
+    expect(harvests).toEqual([]);
+  });
+
+  it("getPackageSourceHarvests returns a defensive copy", async () => {
+    const client = createMockMetrcClient();
+    const a = await client.getPackageSourceHarvests(5001);
+    const b = await client.getPackageSourceHarvests(5001);
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
+  });
+
+  it("override-fixtures test: can override all fourteen new fixture groups with empty values", async () => {
     const overrides: MockFixtures = {
       ...DEFAULT_MOCK_FIXTURES,
+      packageAdjustments: [],
+      transferredPackages: [],
+      inTransitPackages: [],
+      labSamplePackages: [],
+      sourceHarvestsByPackageId: {},
       strains: [],
       inactiveStrains: [],
       strainDetailsById: {},
@@ -460,6 +547,11 @@ describe("createMockMetrcClient", () => {
       locationDetailsById: {},
     };
     const client = createMockMetrcClient(overrides);
+    expect(await client.getPackageAdjustments()).toEqual([]);
+    expect(await client.getTransferredPackages()).toEqual([]);
+    expect(await client.getInTransitPackages()).toEqual([]);
+    expect(await client.getLabSamplePackages()).toEqual([]);
+    expect(await client.getPackageSourceHarvests(5001)).toEqual([]);
     expect(await client.getActiveStrains()).toEqual([]);
     expect(await client.getLocationTypes()).toEqual([]);
     expect(await client.getActiveSublocations()).toEqual([]);

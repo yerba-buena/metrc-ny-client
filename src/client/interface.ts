@@ -1,7 +1,7 @@
 // src/client/interface.ts
 import type {
   MetrcTransfer, MetrcOutgoingTransfer, MetrcTransferType, MetrcPackage, DeliveryWithPackages,
-  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason,
+  MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
 } from "../schemas/index.js";
@@ -87,6 +87,21 @@ export interface MetrcClient {
 
   /** API: GET /packages/v2/{label} */
   getPackageByLabel(label: string): Promise<MetrcActivePackage>;
+
+  /** API: GET /packages/v2/adjustments (LastModified-quirk) */
+  getPackageAdjustments(): Promise<MetrcPackageAdjustment[]>;
+
+  /** API: GET /packages/v2/transferred (LastModified-quirk) */
+  getTransferredPackages(): Promise<MetrcTransferredPackage[]>;
+
+  /** API: GET /packages/v2/intransit (LastModified-quirk) */
+  getInTransitPackages(): Promise<MetrcActivePackage[]>;
+
+  /** API: GET /packages/v2/labsamples (LastModified-quirk) */
+  getLabSamplePackages(): Promise<MetrcActivePackage[]>;
+
+  /** API: GET /packages/v2/{id}/source/harvests */
+  getPackageSourceHarvests(id: number): Promise<MetrcPackageSourceHarvest[]>;
 
   /** API: GET /items/v2/active (LastModified-quirk) */
   getActiveItems(): Promise<MetrcItem[]>;
