@@ -1045,4 +1045,225 @@ describe("createLiveMetrcClient", () => {
     const client = createLiveMetrcClient({ ...baseConfig, fetch, validateResponses: true });
     await expect(client.getLocationById(1)).rejects.toBeInstanceOf(MetrcResponseError);
   });
+
+  // ── Phase 7 sales expansion ─────────────────────────────────────────────────
+
+  it("getSalesPatientRegistrationLocations calls the bare-array endpoint and returns locations", async () => {
+    let capturedUrl = "";
+    const data = [{ Id: 1, Name: "Main" }, { Id: 2, Name: "Secondary" }];
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return { ok: true, status: 200, headers: new Headers(), json: async () => data, text: async () => "" } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesPatientRegistrationLocations();
+    expect(capturedUrl).toContain("/sales/v2/patientregistration/locations");
+    expect(result.length).toBe(2);
+    expect(result[0]!.Id).toBe(1);
+    expect(result[0]!.Name).toBe("Main");
+  });
+
+  it("getSalesDeliveryReturnReasons calls the paginated endpoint and returns reasons", async () => {
+    let capturedUrl = "";
+    const reason = { Name: "Damaged", RequiresNote: true, RequiresWasteWeight: false, RequiresImmatureWasteWeight: false, RequiresMatureWasteWeight: false };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([reason]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesDeliveryReturnReasons();
+    expect(capturedUrl).toContain("/sales/v2/deliveries/returnreasons");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("Damaged");
+    expect(result[0]!.RequiresNote).toBe(true);
+  });
+
+  it("getSalesCounties calls the paginated endpoint and returns counties", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([{ Name: "New York" }]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesCounties();
+    expect(capturedUrl).toContain("/sales/v2/counties");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Name).toBe("New York");
+  });
+
+  it("getSalesPaymentTypes calls the paginated endpoint and returns payment types", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([{ Name: "Cash" }, { Name: "Debit" }]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesPaymentTypes();
+    expect(capturedUrl).toContain("/sales/v2/paymenttypes");
+    expect(result.length).toBe(2);
+    expect(result[0]!.Name).toBe("Cash");
+  });
+
+  it("getActiveSalesDeliveries passes through the window and calls the endpoint", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([{ Id: 8001 }]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getActiveSalesDeliveries({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T23:59:59Z",
+    });
+    expect(capturedUrl).toContain("/sales/v2/deliveries/active");
+    const params = new URL(capturedUrl).searchParams;
+    expect(params.get("lastModifiedStart")).toBe("2026-01-01T00:00:00Z");
+    expect(params.get("lastModifiedEnd")).toBe("2026-12-31T23:59:59Z");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Id).toBe(8001);
+  });
+
+  it("getActiveSalesDeliveries throws TypeError on missing/empty window", async () => {
+    const fetch = vi.fn();
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await expect(client.getActiveSalesDeliveries(undefined as never)).rejects.toBeInstanceOf(TypeError);
+    await expect(client.getActiveSalesDeliveries({ lastModifiedStart: "", lastModifiedEnd: "2026-12-31T23:59:59Z" } as never)).rejects.toBeInstanceOf(TypeError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("getInactiveSalesDeliveries passes through the window and calls the endpoint", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInactiveSalesDeliveries({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T23:59:59Z",
+    });
+    expect(capturedUrl).toContain("/sales/v2/deliveries/inactive");
+    expect(result).toEqual([]);
+  });
+
+  it("getInactiveSalesDeliveries throws TypeError on missing window", async () => {
+    const fetch = vi.fn();
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await expect(client.getInactiveSalesDeliveries(undefined as never)).rejects.toBeInstanceOf(TypeError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("getActiveRetailerSalesDeliveries passes through the window and calls the endpoint", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([{ Id: 9001 }]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getActiveRetailerSalesDeliveries({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T23:59:59Z",
+    });
+    expect(capturedUrl).toContain("/sales/v2/deliveries/retailer/active");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Id).toBe(9001);
+  });
+
+  it("getActiveRetailerSalesDeliveries throws TypeError on missing window", async () => {
+    const fetch = vi.fn();
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await expect(client.getActiveRetailerSalesDeliveries(undefined as never)).rejects.toBeInstanceOf(TypeError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("getInactiveRetailerSalesDeliveries passes through the window and calls the endpoint", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInactiveRetailerSalesDeliveries({
+      lastModifiedStart: "2026-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T23:59:59Z",
+    });
+    expect(capturedUrl).toContain("/sales/v2/deliveries/retailer/inactive");
+    expect(result).toEqual([]);
+  });
+
+  it("getInactiveRetailerSalesDeliveries throws TypeError on missing window", async () => {
+    const fetch = vi.fn();
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await expect(client.getInactiveRetailerSalesDeliveries(undefined as never)).rejects.toBeInstanceOf(TypeError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("getInactiveSalesReceipts passes through the LastModified window verbatim (QUIRKED endpoint)", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return okEnvelope([fakeReceipt(7999)]) as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getInactiveSalesReceipts({
+      lastModifiedStart: "2025-01-01T00:00:00Z",
+      lastModifiedEnd: "2026-12-31T23:59:59Z",
+    });
+    expect(capturedUrl).toContain("/sales/v2/receipts/inactive");
+    const params = new URL(capturedUrl).searchParams;
+    expect(params.get("lastModifiedStart")).toBe("2025-01-01T00:00:00Z");
+    expect(params.get("lastModifiedEnd")).toBe("2026-12-31T23:59:59Z");
+    expect(result.length).toBe(1);
+    expect(result[0]!.Id).toBe(7999);
+  });
+
+  it("getInactiveSalesReceipts throws TypeError on missing/empty window", async () => {
+    const fetch = vi.fn();
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    await expect(client.getInactiveSalesReceipts(undefined as never)).rejects.toBeInstanceOf(TypeError);
+    await expect(client.getInactiveSalesReceipts({ lastModifiedStart: "2026-01-01T00:00:00Z", lastModifiedEnd: "" } as never)).rejects.toBeInstanceOf(TypeError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("getSalesReceiptByExternalNumber calls the external/{externalNumber} endpoint and URL-encodes the number", async () => {
+    let capturedUrl = "";
+    const externalNum = "26102742-3fa1-442b-acb4-3596b3623af4";
+    const detail = { ...fakeReceipt(12345), Transactions: [] };
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return { ok: true, status: 200, headers: new Headers(), json: async () => detail, text: async () => "" } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesReceiptByExternalNumber(externalNum);
+    expect(capturedUrl).toContain("/sales/v2/receipts/external/");
+    expect(capturedUrl).toContain(encodeURIComponent(externalNum));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result.Id).toBe(12345);
+  });
+
+  it("getSalesDeliveryById calls /sales/v2/deliveries/{id} and returns a single object", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return { ok: true, status: 200, headers: new Headers(), json: async () => ({ Id: 8001 }), text: async () => "" } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getSalesDeliveryById(8001);
+    expect(capturedUrl).toContain("/sales/v2/deliveries/8001");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result.Id).toBe(8001);
+  });
+
+  it("getRetailerSalesDeliveryById calls /sales/v2/deliveries/retailer/{id} and returns a single object", async () => {
+    let capturedUrl = "";
+    const fetch = vi.fn(async (url: string) => {
+      capturedUrl = url;
+      return { ok: true, status: 200, headers: new Headers(), json: async () => ({ Id: 9001 }), text: async () => "" } as unknown as Response;
+    });
+    const client = createLiveMetrcClient({ ...baseConfig, fetch });
+    const result = await client.getRetailerSalesDeliveryById(9001);
+    expect(capturedUrl).toContain("/sales/v2/deliveries/retailer/9001");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result.Id).toBe(9001);
+  });
 });

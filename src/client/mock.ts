@@ -4,6 +4,8 @@ import type {
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
+  MetrcSalesPatientRegistrationLocation, MetrcSalesDeliveryReturnReason,
+  MetrcSalesCounty, MetrcSalesPaymentType, MetrcSalesDelivery, MetrcSalesRetailerDelivery,
 } from "../schemas/index.js";
 
 export interface MockFixtures {
@@ -30,6 +32,18 @@ export interface MockFixtures {
   salesReceiptDetailsById: Record<number, MetrcSalesReceiptDetail>;
   itemCategories: MetrcItemCategory[];
   salesCustomerTypes: string[];
+  salesPatientRegistrationLocations: MetrcSalesPatientRegistrationLocation[];
+  salesDeliveryReturnReasons: MetrcSalesDeliveryReturnReason[];
+  salesCounties: MetrcSalesCounty[];
+  salesPaymentTypes: MetrcSalesPaymentType[];
+  activeSalesDeliveries: MetrcSalesDelivery[];
+  inactiveSalesDeliveries: MetrcSalesDelivery[];
+  activeRetailerSalesDeliveries: MetrcSalesRetailerDelivery[];
+  inactiveRetailerSalesDeliveries: MetrcSalesRetailerDelivery[];
+  inactiveSalesReceipts: MetrcSalesReceipt[];
+  salesReceiptByExternalNumber: Record<string, MetrcSalesReceiptDetail>;
+  salesDeliveryDetailsById: Record<number, MetrcSalesDelivery>;
+  retailerSalesDeliveryDetailsById: Record<number, MetrcSalesRetailerDelivery>;
   strains: MetrcStrain[];
   inactiveStrains: MetrcStrain[];
   strainDetailsById: Record<number, MetrcStrain>;
@@ -588,6 +602,57 @@ const DEFAULT_SOURCE_HARVESTS_BY_PACKAGE_ID: Record<number, MetrcPackageSourceHa
   [DEFAULT_ACTIVE_PACKAGE_A.Id]: [DEFAULT_PACKAGE_SOURCE_HARVEST],
 };
 
+// Phase 7 sales expansion fixtures
+
+const DEFAULT_SALES_PATIENT_REGISTRATION_LOCATION: MetrcSalesPatientRegistrationLocation = {
+  Id: 1,
+  Name: "Mock Dispensary",
+};
+
+const DEFAULT_SALES_DELIVERY_RETURN_REASON: MetrcSalesDeliveryReturnReason = {
+  Name: "Damaged",
+  RequiresNote: true,
+  RequiresWasteWeight: false,
+  RequiresImmatureWasteWeight: false,
+  RequiresMatureWasteWeight: false,
+};
+
+const DEFAULT_SALES_COUNTY: MetrcSalesCounty = {
+  Name: "New York",
+};
+
+const DEFAULT_SALES_PAYMENT_TYPE: MetrcSalesPaymentType = {
+  Name: "Cash",
+};
+
+const DEFAULT_SALES_DELIVERY: MetrcSalesDelivery = {
+  Id: 8001,
+};
+
+const DEFAULT_RETAILER_SALES_DELIVERY: MetrcSalesRetailerDelivery = {
+  Id: 9001,
+};
+
+const DEFAULT_INACTIVE_RECEIPT_ENTRY: MetrcSalesReceipt = {
+  Id: 7999,
+  ReceiptNumber: "0007999",
+  ExternalReceiptNumber: "ext-inactive-001",
+  SalesDateTime: "2025-12-01T10:00:00Z",
+  SalesCustomerType: "Consumer",
+  PatientLicenseNumber: null,
+  CaregiverLicenseNumber: null,
+  IdentificationMethod: null,
+  PatientRegistrationLocationId: null,
+  TotalPackages: 1,
+  TotalPrice: 25.00,
+  IsFinal: true,
+  ArchivedDate: "2026-01-15T00:00:00Z",
+  RecordedDateTime: "2025-12-01T10:05:00Z",
+  RecordedByUserName: "mock-user",
+  LastModified: "2026-01-15T00:00:00Z",
+  Transactions: [],
+};
+
 export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   transfers: [DEFAULT_TRANSFER],
   outgoingTransfers: [DEFAULT_OUTGOING_TRANSFER],
@@ -612,6 +677,18 @@ export const DEFAULT_MOCK_FIXTURES: MockFixtures = {
   salesReceiptDetailsById: { 7001: DEFAULT_RECEIPT_DETAIL_7001 },
   itemCategories: [DEFAULT_ITEM_CATEGORY_FLOWER, DEFAULT_ITEM_CATEGORY_PREROLL],
   salesCustomerTypes: DEFAULT_SALES_CUSTOMER_TYPES,
+  salesPatientRegistrationLocations: [DEFAULT_SALES_PATIENT_REGISTRATION_LOCATION],
+  salesDeliveryReturnReasons: [DEFAULT_SALES_DELIVERY_RETURN_REASON],
+  salesCounties: [DEFAULT_SALES_COUNTY],
+  salesPaymentTypes: [DEFAULT_SALES_PAYMENT_TYPE],
+  activeSalesDeliveries: [DEFAULT_SALES_DELIVERY],
+  inactiveSalesDeliveries: [],
+  activeRetailerSalesDeliveries: [DEFAULT_RETAILER_SALES_DELIVERY],
+  inactiveRetailerSalesDeliveries: [],
+  inactiveSalesReceipts: [DEFAULT_INACTIVE_RECEIPT_ENTRY],
+  salesReceiptByExternalNumber: { "ext-inactive-001": DEFAULT_RECEIPT_DETAIL_7001 },
+  salesDeliveryDetailsById: { 8001: DEFAULT_SALES_DELIVERY },
+  retailerSalesDeliveryDetailsById: { 9001: DEFAULT_RETAILER_SALES_DELIVERY },
   strains: [DEFAULT_STRAIN],
   inactiveStrains: [],
   strainDetailsById: DEFAULT_STRAIN_DETAILS_BY_ID,
@@ -716,6 +793,59 @@ export function createMockMetrcClient(fixtures: MockFixtures = DEFAULT_MOCK_FIXT
     },
     async getSalesCustomerTypes(): Promise<string[]> {
       return [...fixtures.salesCustomerTypes];
+    },
+    async getSalesPatientRegistrationLocations(): Promise<MetrcSalesPatientRegistrationLocation[]> {
+      return [...fixtures.salesPatientRegistrationLocations];
+    },
+    async getSalesDeliveryReturnReasons(): Promise<MetrcSalesDeliveryReturnReason[]> {
+      return [...fixtures.salesDeliveryReturnReasons];
+    },
+    async getSalesCounties(): Promise<MetrcSalesCounty[]> {
+      return [...fixtures.salesCounties];
+    },
+    async getSalesPaymentTypes(): Promise<MetrcSalesPaymentType[]> {
+      return [...fixtures.salesPaymentTypes];
+    },
+    async getActiveSalesDeliveries(_window: SalesReceiptsWindow): Promise<MetrcSalesDelivery[]> {
+      void _window;
+      return [...fixtures.activeSalesDeliveries];
+    },
+    async getInactiveSalesDeliveries(_window: SalesReceiptsWindow): Promise<MetrcSalesDelivery[]> {
+      void _window;
+      return [...fixtures.inactiveSalesDeliveries];
+    },
+    async getActiveRetailerSalesDeliveries(_window: SalesReceiptsWindow): Promise<MetrcSalesRetailerDelivery[]> {
+      void _window;
+      return [...fixtures.activeRetailerSalesDeliveries];
+    },
+    async getInactiveRetailerSalesDeliveries(_window: SalesReceiptsWindow): Promise<MetrcSalesRetailerDelivery[]> {
+      void _window;
+      return [...fixtures.inactiveRetailerSalesDeliveries];
+    },
+    async getInactiveSalesReceipts(_window: SalesReceiptsWindow): Promise<MetrcSalesReceipt[]> {
+      void _window;
+      return [...fixtures.inactiveSalesReceipts];
+    },
+    async getSalesReceiptByExternalNumber(externalNumber: string): Promise<MetrcSalesReceiptDetail> {
+      const detail = fixtures.salesReceiptByExternalNumber[externalNumber];
+      if (!detail) {
+        throw new Error(`mock: no sales receipt fixture for external number ${externalNumber}`);
+      }
+      return { ...detail, Transactions: [...detail.Transactions] };
+    },
+    async getSalesDeliveryById(id: number): Promise<MetrcSalesDelivery> {
+      const delivery = fixtures.salesDeliveryDetailsById[id];
+      if (!delivery) {
+        throw new Error(`mock: no sales delivery fixture for id ${id}`);
+      }
+      return { ...delivery };
+    },
+    async getRetailerSalesDeliveryById(id: number): Promise<MetrcSalesRetailerDelivery> {
+      const delivery = fixtures.retailerSalesDeliveryDetailsById[id];
+      if (!delivery) {
+        throw new Error(`mock: no retailer sales delivery fixture for id ${id}`);
+      }
+      return { ...delivery };
     },
     async getActiveStrains(): Promise<MetrcStrain[]> {
       return [...fixtures.strains];
