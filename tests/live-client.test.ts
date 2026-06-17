@@ -1143,6 +1143,9 @@ describe("createLiveMetrcClient", () => {
       lastModifiedEnd: "2026-12-31T23:59:59Z",
     });
     expect(capturedUrl).toContain("/sales/v2/deliveries/inactive");
+    const params = new URL(capturedUrl).searchParams;
+    expect(params.get("lastModifiedStart")).toBe("2026-01-01T00:00:00Z");
+    expect(params.get("lastModifiedEnd")).toBe("2026-12-31T23:59:59Z");
     expect(result).toEqual([]);
   });
 
@@ -1165,6 +1168,9 @@ describe("createLiveMetrcClient", () => {
       lastModifiedEnd: "2026-12-31T23:59:59Z",
     });
     expect(capturedUrl).toContain("/sales/v2/deliveries/retailer/active");
+    const params = new URL(capturedUrl).searchParams;
+    expect(params.get("lastModifiedStart")).toBe("2026-01-01T00:00:00Z");
+    expect(params.get("lastModifiedEnd")).toBe("2026-12-31T23:59:59Z");
     expect(result.length).toBe(1);
     expect(result[0]!.Id).toBe(9001);
   });
@@ -1188,6 +1194,9 @@ describe("createLiveMetrcClient", () => {
       lastModifiedEnd: "2026-12-31T23:59:59Z",
     });
     expect(capturedUrl).toContain("/sales/v2/deliveries/retailer/inactive");
+    const params = new URL(capturedUrl).searchParams;
+    expect(params.get("lastModifiedStart")).toBe("2026-01-01T00:00:00Z");
+    expect(params.get("lastModifiedEnd")).toBe("2026-12-31T23:59:59Z");
     expect(result).toEqual([]);
   });
 
@@ -1227,7 +1236,9 @@ describe("createLiveMetrcClient", () => {
 
   it("getSalesReceiptByExternalNumber calls the external/{externalNumber} endpoint and URL-encodes the number", async () => {
     let capturedUrl = "";
-    const externalNum = "26102742-3fa1-442b-acb4-3596b3623af4";
+    // Value with characters that REQUIRE percent-encoding (space, slash, ?, &)
+    // so the assertion actually fails if encodeURIComponent is removed.
+    const externalNum = "ext receipt/2026?id=1&x";
     const detail = { ...fakeReceipt(12345), Transactions: [] };
     const fetch = vi.fn(async (url: string) => {
       capturedUrl = url;
@@ -1237,6 +1248,8 @@ describe("createLiveMetrcClient", () => {
     const result = await client.getSalesReceiptByExternalNumber(externalNum);
     expect(capturedUrl).toContain("/sales/v2/receipts/external/");
     expect(capturedUrl).toContain(encodeURIComponent(externalNum));
+    // The raw, unencoded value must NOT appear in the path.
+    expect(capturedUrl).not.toContain(externalNum);
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(result.Id).toBe(12345);
   });
