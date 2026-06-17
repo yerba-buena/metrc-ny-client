@@ -1,0 +1,92 @@
+{
+  "phase": 7,
+  "capturedAt": "2026-06-17T00:00:00Z",
+  "endpoints": {
+    "/sales/v2/patientregistration/locations": {
+      "envelope": "bare-array",
+      "totalRecords": 50,
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Bare-array of small {Id, Name} objects. Lookup table.",
+      "fieldTypes": { "Id": "number", "Name": "string" }
+    },
+    "/sales/v2/deliveries/returnreasons": {
+      "envelope": "paginated",
+      "totalRecords": 1,
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Paginated. Field shape is identical to metrcPackageAdjustReasonSchema (Name + Requires* booleans) but semantically distinct - create dedicated metrcSalesDeliveryReturnReasonSchema for clarity.",
+      "fieldTypes": {
+        "Name": "string",
+        "RequiresNote": "boolean",
+        "RequiresWasteWeight": "boolean",
+        "RequiresImmatureWasteWeight": "boolean",
+        "RequiresMatureWasteWeight": "boolean"
+      }
+    },
+    "/sales/v2/counties": {
+      "envelope": "n/a",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "HTTP 401 - restricted on this license. Implement URL pattern with permissive schema (Name string + passthrough) per docs description. Live verification deferred until a license with permission exists.",
+      "fieldTypes": "(unverified - 401)"
+    },
+    "/sales/v2/paymenttypes": {
+      "envelope": "n/a",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "HTTP 401 - restricted. Same treatment as counties: permissive schema, live verification deferred.",
+      "fieldTypes": "(unverified - 401)"
+    },
+    "/sales/v2/deliveries/active": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "INCONCLUSIVE (0 rows)",
+      "notes": "0 rows on this license. Apply wide window defensively. Schema permissive (Id + passthrough) since no row was observable. Reuses SalesReceiptsWindow type for the date range (same semantic).",
+      "fieldTypes": "(unverified - 0 rows)"
+    },
+    "/sales/v2/deliveries/inactive": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "INCONCLUSIVE (0 rows)",
+      "notes": "Same treatment as deliveries/active.",
+      "fieldTypes": "(unverified - 0 rows)"
+    },
+    "/sales/v2/deliveries/retailer/active": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "INCONCLUSIVE (0 rows)",
+      "notes": "0 rows on this license. Apply wide window defensively. Separate metrcSalesRetailerDeliverySchema (permissive) since retailer-deliveries may have additional fields.",
+      "fieldTypes": "(unverified - 0 rows)"
+    },
+    "/sales/v2/deliveries/retailer/inactive": {
+      "envelope": "paginated",
+      "totalRecords": 0,
+      "lastModifiedQuirkCheck": "INCONCLUSIVE (0 rows)",
+      "notes": "Same as retailer/active.",
+      "fieldTypes": "(unverified - 0 rows)"
+    },
+    "/sales/v2/receipts/inactive": {
+      "envelope": "paginated",
+      "totalRecords": 9822,
+      "lastModifiedQuirkCheck": "QUIRKED",
+      "notes": "bare:181 windowed-1-month:9822 - strong partial-quirk. Wide window required. Same shape as receipts/active - reuses metrcSalesReceiptSchema. License has 33,450 total inactive receipts across all time.",
+      "fieldTypes": "(matches metrcSalesReceiptSchema)"
+    },
+    "/sales/v2/receipts/external/{externalNumber}": {
+      "envelope": "single-object",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "Single-object lookup by external receipt number. Confirmed shape identical to receipts/{id}. Reuses metrcSalesReceiptDetailSchema with validateOne.",
+      "fieldTypes": "(matches metrcSalesReceiptDetailSchema)"
+    },
+    "/sales/v2/deliveries/{id}": {
+      "envelope": "n/a",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "HTTP 401 - restricted. Implement URL pattern with permissive schema; live shape unverified.",
+      "fieldTypes": "(unverified - 401)"
+    },
+    "/sales/v2/deliveries/retailer/{id}": {
+      "envelope": "n/a",
+      "lastModifiedQuirkCheck": "N/A",
+      "notes": "HTTP 401 - restricted. Same as deliveries/{id}.",
+      "fieldTypes": "(unverified - 401)"
+    }
+  },
+  "licenseScopeNotes": "Four endpoints (/sales/v2/counties, /sales/v2/paymenttypes, /sales/v2/deliveries/{id}, /sales/v2/deliveries/retailer/{id}) return 401 on this license. URL patterns implemented per docs; live verification deferred. Track license-scope investigation as a follow-up if these endpoints become operationally needed."
+}
