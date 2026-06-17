@@ -5,6 +5,8 @@ export {
   metrcPackageAdjustReasonSchema, metrcPackageAdjustmentSchema, metrcTransferredPackageSchema, metrcPackageSourceHarvestSchema,
   metrcItemSchema, metrcSalesReceiptSchema, metrcSalesReceiptDetailSchema,
   metrcSalesTransactionSchema, metrcItemCategorySchema, metrcStrainSchema, metrcSublocationSchema, metrcLocationTypeSchema,
+  metrcSalesPatientRegistrationLocationSchema, metrcSalesDeliveryReturnReasonSchema,
+  metrcSalesCountySchema, metrcSalesPaymentTypeSchema, metrcSalesDeliverySchema, metrcSalesRetailerDeliverySchema,
 } from "./schemas/index.js";
 
 export type {
@@ -12,6 +14,8 @@ export type {
   MetrcLocation, MetrcActivePackage, MetrcPackageAdjustReason, MetrcPackageAdjustment, MetrcTransferredPackage, MetrcPackageSourceHarvest,
   MetrcItem, MetrcSalesReceipt, MetrcSalesReceiptDetail, MetrcSalesTransaction,
   MetrcItemCategory, MetrcStrain, MetrcSublocation, MetrcLocationType,
+  MetrcSalesPatientRegistrationLocation, MetrcSalesDeliveryReturnReason,
+  MetrcSalesCounty, MetrcSalesPaymentType, MetrcSalesDelivery, MetrcSalesRetailerDelivery,
 } from "./schemas/index.js";
 
 export type { MetrcClient, MetrcConfig, SalesReceiptsWindow } from "./client/interface.js";
